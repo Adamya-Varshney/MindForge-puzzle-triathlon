@@ -1,0 +1,2804 @@
+<title>Puzzle Triathlon</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a stadium track. Three lanes carry progress to a finish line; boards sit centred on a calm infield. */
+:root {
+  --bg: #EDF1EC; --surface: #FFFFFF; --surface-2: #F5F8F4; --inset: #E2E9E2;
+  --ink: #14211C; --ink-2: #45564F; --ink-3: #6B7A73; --line: #D0DAD2; --line-strong: #14211C;
+  --math: #C2255C; --math-soft: #FBE3EC; --math-deep: #8E1741; --on-math: #FFFFFF; --math-text: #A31B4B;
+  --ana: #17B8A0; --ana-soft: #D7F4EE; --ana-deep: #0C7F6E; --on-ana: #06231E; --ana-text: #0A6E60;
+  --logic: #6E56CF; --logic-soft: #E9E4FB; --logic-deep: #4A369E; --on-logic: #FFFFFF; --logic-text: #4E3AAF;
+  --bad: #C92F17; --bad-soft: #FCE3DD; --good: #1F7F3B; --good-soft: #DDF3E3;
+  --shadow: 0 1px 0 rgba(20, 33, 28, .05), 0 14px 30px -18px rgba(20, 33, 28, .35);
+  --scrim: rgba(237, 241, 236, .86);
+  --b0: #E5484D; --b1: #3E8FE0; --b2: #2FA860; --b3: #A6D62F; --b4: #8E4EC6; --b5: #12A594;
+  --b6: #E93D82; --b7: #8A6A52; --b8: #1FB6D4; --b9: #8B93A1; --b10: #F0785A; --b11: #2B3A55;
+  --f-display: "Bricolage Grotesque", "Avenir Next Condensed", "Trebuchet MS", sans-serif;
+  --f-body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "Spline Sans Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1513; --surface: #18201D; --surface-2: #1F2925; --inset: #0B100E;
+    --ink: #E7EFEA; --ink-2: #B4C2BB; --ink-3: #8A9A93; --line: #2D3A35; --line-strong: #E7EFEA;
+    --math: #CF3F75; --math-soft: #3A1826; --math-deep: #8F2449; --on-math: #FFFFFF; --math-text: #F590B4;
+    --ana: #25A892; --ana-soft: #11332D; --ana-deep: #16695B; --on-ana: #04201B; --ana-text: #5FD8C2;
+    --logic: #8A75E8; --logic-soft: #262047; --logic-deep: #5A48B0; --on-logic: #100B24; --logic-text: #B8AAF8;
+    --bad: #FF7F66; --bad-soft: #43180F; --good: #62CC80; --good-soft: #143220;
+    --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 14px 30px -18px rgba(0, 0, 0, .8);
+    --scrim: rgba(15, 21, 19, .88);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1513; --surface: #18201D; --surface-2: #1F2925; --inset: #0B100E;
+  --ink: #E7EFEA; --ink-2: #B4C2BB; --ink-3: #8A9A93; --line: #2D3A35; --line-strong: #E7EFEA;
+  --math: #CF3F75; --math-soft: #3A1826; --math-deep: #8F2449; --on-math: #FFFFFF; --math-text: #F590B4;
+  --ana: #25A892; --ana-soft: #11332D; --ana-deep: #16695B; --on-ana: #04201B; --ana-text: #5FD8C2;
+  --logic: #8A75E8; --logic-soft: #262047; --logic-deep: #5A48B0; --on-logic: #100B24; --logic-text: #B8AAF8;
+  --bad: #FF7F66; --bad-soft: #43180F; --good: #62CC80; --good-soft: #143220;
+  --shadow: 0 1px 0 rgba(0, 0, 0, .3), 0 14px 30px -18px rgba(0, 0, 0, .8);
+  --scrim: rgba(15, 21, 19, .88);
+  color-scheme: dark;
+}
+[data-track="math"] { --t: var(--math); --t-soft: var(--math-soft); --t-deep: var(--math-deep); --on-t: var(--on-math); --t-text: var(--math-text); }
+[data-track="analytical"] { --t: var(--ana); --t-soft: var(--ana-soft); --t-deep: var(--ana-deep); --on-t: var(--on-ana); --t-text: var(--ana-text); }
+[data-track="logic"] { --t: var(--logic); --t-soft: var(--logic-soft); --t-deep: var(--logic-deep); --on-t: var(--on-logic); --t-text: var(--logic-text); }
+
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.5 var(--f-body); margin: 0; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+:focus-visible { outline: 3px solid var(--logic); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+p { margin: 0; }
+main { min-width: 0; }
+.stack { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.app { max-width: 1080px; margin-inline: auto; padding-inline: 16px; padding-block: 14px 56px; display: flex; flex-direction: column; gap: 22px; }
+
+/* ---------- header ---------- */
+.top { display: flex; align-items: center; gap: 12px 18px; flex-wrap: wrap; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font: 800 21px/1 var(--f-display); letter-spacing: -.02em; background: none; border: 0; padding: 4px 0; }
+.brand-mark { display: grid; gap: 3px; width: 26px; }
+.brand-mark i { height: 5px; border-radius: 3px; display: block; }
+.brand-mark i:nth-child(1) { background: var(--math); width: 100%; }
+.brand-mark i:nth-child(2) { background: var(--ana); width: 72%; }
+.brand-mark i:nth-child(3) { background: var(--logic); width: 86%; }
+.nav { display: flex; gap: 4px; background: var(--inset); padding: 4px; border-radius: 12px; margin-left: auto; }
+.nav button { border: 0; background: none; padding: 7px 13px; border-radius: 9px; font-weight: 600; font-size: 14px; color: var(--ink-2); }
+.nav button.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.save { font-size: 12.5px; color: var(--ink-3); display: inline-flex; align-items: center; gap: 6px; flex-basis: 100%; justify-content: flex-end; }
+.save::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
+.save[data-state="ok"]::before { background: var(--good); }
+.save[data-state="warn"]::before { background: var(--bad); }
+
+/* ---------- buttons ---------- */
+.btn { border: 1.5px solid var(--line); border-bottom-width: 4px; background: var(--surface); color: var(--ink); border-radius: 12px; padding: 9px 14px; font-weight: 600; font-size: 14.5px; line-height: 1.2; transition: transform .06s, border-bottom-width .06s; min-height: 44px; }
+.btn:not(:disabled):active { transform: translateY(2px); border-bottom-width: 2px; margin-bottom: 2px; }
+.btn:disabled { opacity: .45; }
+.btn.primary { background: var(--t, var(--logic)); color: var(--on-t, var(--on-logic)); border-color: var(--t-deep, var(--logic-deep)); }
+.btn.on { background: var(--t-soft); border-color: var(--t); color: var(--t-text); }
+.btn.ghost { border-color: transparent; background: none; border-bottom-width: 1.5px; }
+.btn.small { min-height: 36px; padding: 6px 11px; font-size: 13.5px; }
+
+/* ---------- hub ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 20px 32px; align-items: center; }
+.eyebrow { font: 600 12.5px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.hero h1 { font-size: clamp(30px, 5vw, 46px); font-weight: 800; line-height: 1.02; margin-block: 10px 12px; }
+.hero .sub { color: var(--ink-2); max-width: 46ch; }
+.lanes { background: var(--surface); border-radius: 18px; box-shadow: var(--shadow); padding: 6px 0; overflow: hidden; }
+.lane { display: grid; grid-template-columns: 34px 96px minmax(0, 1fr) 132px; align-items: center; gap: 10px; padding: 12px 16px 12px 12px; }
+.lane + .lane { border-top: 2px dashed var(--line); }
+.lane-no { font: 800 22px/1 var(--f-display); width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--t); color: var(--on-t); }
+.lane-name { font-weight: 700; }
+.lane-run { position: relative; height: 26px; }
+.lane-run::before { content: ""; position: absolute; left: 0; right: 14px; top: 11px; height: 4px; border-radius: 2px; background: var(--inset); }
+.lane-run::after { content: ""; position: absolute; right: 0; top: -14px; bottom: -14px; width: 12px; background: repeating-conic-gradient(var(--ink) 0 25%, var(--surface) 0 50%) 0 0 / 12px 12px; }
+.lane-fill { position: absolute; left: 0; top: 11px; height: 4px; border-radius: 2px; background: var(--t); width: calc((100% - 14px) * var(--p)); transition: width .5s cubic-bezier(.3, 1.3, .5, 1); }
+.pip { position: absolute; top: 7px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--line); transform: translateX(-50%); }
+.pip.on { border-color: var(--t); background: var(--t); }
+.pip.p1 { left: calc((100% - 14px) * .5); }
+.pip.p2 { left: calc(100% - 22px); }
+.runner { position: absolute; top: 1px; left: calc((100% - 36px) * var(--p)); width: 24px; height: 24px; border-radius: 50%; background: var(--t); border: 3px solid var(--surface); box-shadow: 0 0 0 2px var(--t); transition: left .5s cubic-bezier(.3, 1.3, .5, 1); }
+.lane-count { font: 500 12.5px/1.25 var(--f-mono); color: var(--ink-2); text-align: right; }
+.lane-count b { color: var(--ink); font-weight: 600; display: block; }
+.levelbar { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
+.levelbar .lbl { font-weight: 700; }
+.levels { display: flex; gap: 6px; flex-wrap: wrap; }
+.lv { width: 40px; height: 40px; border-radius: 11px; border: 1.5px solid var(--line); border-bottom-width: 3px; background: var(--surface); font: 700 15px/1 var(--f-mono); }
+.lv.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.lv:disabled { background: transparent; border-style: dashed; border-bottom-width: 1.5px; color: var(--ink-3); opacity: .7; }
+.lv.cur:not(.on) { border-color: var(--ink); }
+.levelnote { color: var(--ink-3); font-size: 13.5px; }
+.tracks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.track { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.track-head { display: flex; align-items: baseline; gap: 10px; padding-bottom: 8px; border-bottom: 3px solid var(--t); }
+.track-head h2 { font-size: 22px; font-weight: 800; }
+.track-head .lane-tag { font: 600 11.5px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--t-text); }
+.track-blurb { color: var(--ink-2); font-size: 14px; min-height: 2.9em; }
+.pz { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 4px 12px; align-items: center; text-align: left; background: var(--surface); border: 1.5px solid var(--line); border-bottom-width: 4px; border-radius: 16px; padding: 12px 14px 12px 12px; transition: transform .06s, border-color .12s; }
+.pz:not(:disabled):hover { border-color: var(--t); }
+.pz:not(:disabled):active { transform: translateY(2px); border-bottom-width: 2px; margin-bottom: 2px; }
+.pz:disabled { opacity: .55; }
+.pz-icon { grid-row: span 2; width: 52px; height: 52px; border-radius: 13px; background: var(--t-soft); display: grid; place-items: center; }
+.pz-icon svg { width: 34px; height: 34px; display: block; }
+.pz-name { font: 700 17px/1.2 var(--f-display); }
+.pz-meta { font: 500 12px/1.3 var(--f-mono); color: var(--ink-3); }
+.pz-desc { grid-column: 1 / -1; color: var(--ink-2); font-size: 13.5px; line-height: 1.4; }
+
+/* ---------- play ---------- */
+.play { max-width: 620px; margin-inline: auto; width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.playbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ptitle { display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1 1 auto; }
+.ptitle h2 { font-size: 22px; font-weight: 800; }
+.ptitle .lvtag { font: 600 12px/1 var(--f-mono); padding: 5px 8px; border-radius: 7px; background: var(--t-soft); color: var(--t-text); white-space: nowrap; }
+.stopwatch { display: inline-flex; align-items: center; gap: 8px; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 4px 4px 4px 12px; }
+.stopwatch .t { font: 600 19px/1 var(--f-mono); font-variant-numeric: tabular-nums; min-width: 4.2ch; }
+.stopwatch button { border: 0; border-radius: 9px; background: var(--bg); color: var(--ink); font-weight: 700; font-size: 13px; padding: 8px 10px; min-height: 36px; }
+.leave { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: var(--bad-soft); border-radius: 12px; padding: 10px 12px; font-size: 14.5px; }
+.leave span { flex: 1 1 200px; }
+.goal { font-size: 15px; color: var(--ink-2); }
+.goal b { color: var(--ink); font-family: var(--f-mono); font-weight: 600; }
+.stage { position: relative; background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); padding: clamp(10px, 3vw, 20px); min-height: 240px; display: grid; place-items: center; }
+.board { width: 100%; max-width: 500px; margin-inline: auto; user-select: none; -webkit-user-select: none; }
+.cover { position: absolute; inset: 0; border-radius: 20px; background: var(--surface); display: grid; place-content: center; justify-items: center; gap: 14px; text-align: center; padding: 20px; z-index: 5; }
+.cover h3 { font-size: 26px; font-weight: 800; }
+.cover p { color: var(--ink-2); }
+.pot { display: flex; gap: 8px; }
+.pot i { width: 14px; height: 14px; border-radius: 4px; animation: hop .8s infinite ease-in-out; }
+.pot i:nth-child(1) { background: var(--math); }
+.pot i:nth-child(2) { background: var(--ana); animation-delay: .12s; }
+.pot i:nth-child(3) { background: var(--logic); animation-delay: .24s; }
+@keyframes hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-12px) rotate(45deg); } }
+.msg { min-height: 1.5em; font-size: 14.5px; color: var(--ink-2); text-align: center; }
+.msg[data-kind="bad"] { color: var(--bad); font-weight: 600; }
+.msg[data-kind="good"] { color: var(--good); font-weight: 600; }
+.pad { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.pad:empty { display: none; }
+.pad .btn { min-width: 44px; font: 700 18px/1 var(--f-mono); padding: 8px 6px; flex: 0 1 52px; }
+.pad .btn.wide { flex: 0 0 auto; font: 600 14.5px/1.2 var(--f-body); padding-inline: 14px; }
+.pad .btn.done { opacity: .35; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.tools .btn { flex: 1 1 90px; max-width: 150px; }
+.howto { background: var(--surface-2); border-radius: 14px; padding: 4px 14px; font-size: 14.5px; color: var(--ink-2); }
+.howto summary { cursor: pointer; font-weight: 700; color: var(--ink); padding: 8px 0; }
+.howto ul { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 4px; }
+
+/* number grids: sudoku, kenken */
+.numgrid { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); border: 2.5px solid var(--line-strong); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.cell { position: relative; aspect-ratio: 1; border: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--surface); padding: 0; display: grid; place-items: center; font: 600 clamp(14px, calc(58cqw / var(--n)), 30px)/1 var(--f-body); font-variant-numeric: tabular-nums; color: var(--t-text); min-width: 0; }
+.board { container-type: inline-size; }
+.cell.given { color: var(--ink); font-weight: 800; }
+.cell.er { border-right: 2.5px solid var(--line-strong); }
+.cell.eb { border-bottom: 2.5px solid var(--line-strong); }
+.cell.lastc { border-right: 0; }
+.cell.lastr { border-bottom: 0; }
+.cell.peer { background: var(--surface-2); }
+.cell.same { background: var(--t-soft); }
+.cell.sel { background: var(--t-soft); box-shadow: inset 0 0 0 3px var(--t); z-index: 1; }
+.cell.clash .v { color: var(--bad); text-decoration: underline wavy; text-underline-offset: 3px; }
+.cell.wrong { background: var(--bad-soft); }
+.cell.wrong .v { color: var(--bad); text-decoration: line-through; }
+.cell.flash { animation: flash .9s ease-out; }
+@keyframes flash { 0% { box-shadow: inset 0 0 0 4px var(--good); } 100% { box-shadow: inset 0 0 0 0 transparent; } }
+.cell .cage { position: absolute; top: 2px; left: 3px; font: 600 clamp(9px, calc(26cqw / var(--n)), 15px)/1 var(--f-mono); color: var(--ink-2); pointer-events: none; }
+.kk .cell { font-size: clamp(13px, calc(46cqw / var(--n)), 26px); padding-top: 14%; }
+.cell .notes { position: absolute; inset: 14% 6% 6%; display: grid; grid-template-columns: repeat(var(--nc), 1fr); font: 500 clamp(6px, calc(17cqw / var(--n)), 10px)/1 var(--f-mono); color: var(--ink-3); place-items: center; pointer-events: none; }
+.sudoku .cell .notes { inset: 6%; }
+.notes i { font-style: normal; }
+
+/* cross math */
+.cm { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: clamp(2px, 1cqw, 6px); max-width: 460px; margin-inline: auto; }
+.cm .cell { border: 1.5px solid var(--line); border-bottom-width: 3px; border-radius: clamp(6px, 2.4cqw, 12px); font-family: var(--f-mono); font-weight: 700; }
+.cm .cell.given { background: var(--inset); border-color: transparent; color: var(--ink); }
+.cm-op, .cm-res { display: grid; place-items: center; aspect-ratio: 1; min-width: 0; font: 600 clamp(12px, calc(44cqw / var(--n)), 24px)/1 var(--f-mono); color: var(--ink-3); }
+.cm-res { position: relative; font-weight: 700; font-size: clamp(11px, calc(36cqw / var(--n)), 20px); color: var(--ink); background: var(--surface-2); border-radius: clamp(6px, 2.4cqw, 12px); font-variant-numeric: tabular-nums; }
+.cm-res::after { position: absolute; top: 1px; right: 3px; font-size: .62em; line-height: 1; }
+.cm-res.ok { background: var(--good-soft); color: var(--good); }
+.cm-res.ok::after { content: "\2713"; }
+.cm-res.bad { background: var(--bad-soft); color: var(--bad); text-decoration: line-through; }
+.cm-res.bad::after { content: "\2715"; }
+
+/* binary grid */
+.tk { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: clamp(2px, 1cqw, 5px); }
+.tk .cell { border: 1.5px solid var(--line); border-radius: clamp(4px, 2cqw, 10px); font: 700 clamp(12px, calc(52cqw / var(--n)), 28px)/1 var(--f-mono); }
+.tk .cell.one { background: var(--t-soft); border-color: var(--t); }
+.tk .cell.zero { border-color: var(--ink-3); }
+.tk .cell.given { background: var(--inset); color: var(--ink); border-color: transparent; }
+.tk .cell.sel { box-shadow: 0 0 0 3px var(--t); }
+
+/* nonogram */
+.nono { display: grid; grid-template-columns: max-content repeat(var(--n), minmax(0, 1fr)); font: 600 clamp(9px, calc(36cqw / var(--n)), 14px)/1.1 var(--f-mono); touch-action: none; }
+.nono .cl { color: var(--ink-2); display: flex; gap: .45em; padding: 2px 5px; }
+.nono .cl.col { flex-direction: column; justify-content: flex-end; align-items: center; padding: 3px 0 5px; gap: .15em; }
+.nono .cl.row { justify-content: flex-end; align-items: center; }
+.nono .cl.done { color: var(--ink-3); text-decoration: line-through; opacity: .6; }
+.nono .cell { border: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); border-radius: 0; font-size: inherit; color: var(--ink-3); }
+.nono .cell.c0 { border-left: 2px solid var(--line-strong); }
+.nono .cell.r0 { border-top: 2px solid var(--line-strong); }
+.nono .cell.e5c { border-right: 2px solid var(--line-strong); }
+.nono .cell.e5r { border-bottom: 2px solid var(--line-strong); }
+.nono .cell.fill { background: var(--t); }
+.nono .cell.x::after { content: "×"; font-size: 1.5em; line-height: .6; }
+.nono .cell.wrong { background: var(--bad); }
+.nono .cell.wrong.x { background: var(--bad-soft); color: var(--bad); }
+
+/* math maze */
+.maze { position: relative; display: grid; grid-template-columns: repeat(var(--c), minmax(0, 1fr)); gap: clamp(4px, 1.6cqw, 8px); }
+.maze .cell { border: 1.5px solid var(--line); border-bottom-width: 3px; border-radius: clamp(8px, 3cqw, 14px); font: 700 clamp(13px, calc(34cqw / var(--c)), 26px)/1 var(--f-mono); color: var(--ink); flex-direction: column; gap: 2px; }
+.maze .cell small { font: 600 clamp(8px, calc(11cqw / var(--c)), 11px)/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); display: block; }
+.maze .cell.on { background: var(--t-soft); border-color: var(--t); color: var(--t-text); }
+.maze .cell.head { background: var(--t); color: var(--on-t); border-color: var(--t-deep); }
+.maze .cell.head small { color: inherit; }
+.maze .cell.next { border-style: dashed; border-color: var(--t); }
+.maze .cell.end { box-shadow: inset 0 0 0 3px var(--ink); }
+.maze svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.maze svg polyline { fill: none; stroke: var(--t); stroke-width: .09; stroke-linecap: round; stroke-linejoin: round; opacity: .45; }
+
+/* sliding tiles */
+.slide { position: relative; margin-inline: auto; aspect-ratio: 1; background: var(--inset); border-radius: 16px; padding: 0; max-width: 420px; }
+.tile { position: absolute; top: 0; left: 0; width: calc(100% / var(--n)); height: calc(100% / var(--n)); padding: clamp(3px, 1.2cqw, 6px); border: 0; background: none; transition: transform .13s ease-out; }
+.tile span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: clamp(8px, 3cqw, 14px); background: var(--surface); border: 1.5px solid var(--line); border-bottom: 5px solid var(--t); font: 800 clamp(18px, calc(40cqw / var(--n)), 44px)/1 var(--f-display); color: var(--ink); }
+.tile.home span { background: var(--t-soft); }
+.tile.pulse span { animation: pulse 1s 2; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 5px var(--t); } }
+
+/* lights out */
+.lights { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: clamp(5px, 2cqw, 10px); max-width: 420px; margin-inline: auto; background: var(--inset); padding: clamp(8px, 3cqw, 14px); border-radius: 18px; }
+.lamp { aspect-ratio: 1; border-radius: 50%; border: 2px solid var(--line); background: var(--surface-2); padding: 0; transition: background .15s, box-shadow .15s, transform .08s; }
+.lamp:active { transform: scale(.94); }
+.lamp.lit { background: var(--t); border-color: var(--t-deep); box-shadow: 0 0 0 4px var(--t-soft), inset 0 -6px 0 rgba(0, 0, 0, .12); }
+.lamp.pulse { animation: pulse 1s 2; }
+
+/* colour sort */
+.tubes { display: flex; flex-wrap: wrap; gap: 26px clamp(6px, 2.4cqw, 14px); justify-content: center; padding-top: 22px; }
+.tube { width: clamp(34px, 11cqw, 48px); border: 2.5px solid var(--ink-3); border-top: 0; border-radius: 0 0 22px 22px; background: var(--surface-2); padding: 4px 3px 5px; display: flex; flex-direction: column-reverse; gap: 3px; height: calc(var(--h) * (clamp(34px, 11cqw, 48px) - 8px) + 18px); }
+.tube.sel { border-color: var(--t); background: var(--t-soft); }
+.tube.sel .ball:last-child { transform: translateY(-16px); }
+.tube.done { border-color: var(--good); }
+.tube.pulse { animation: pulse 1s 2; }
+.ball { width: 100%; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font: 700 clamp(10px, 3.4cqw, 14px)/1 var(--f-mono); color: #FFFFFF; text-shadow: 0 1px 1px rgba(0, 0, 0, .45); transition: transform .12s; flex: none; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .16); }
+
+/* code breaker */
+.mm { display: flex; flex-direction: column; gap: 6px; max-width: 440px; margin-inline: auto; }
+.mm-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 12px; background: var(--surface-2); }
+.mm-row.cur { background: var(--t-soft); box-shadow: inset 0 0 0 2px var(--t); }
+.mm-row.empty { opacity: .5; padding-block: 3px; }
+.mm-row .ix { font: 600 12px/1 var(--f-mono); color: var(--ink-3); }
+.mm-pegs { display: flex; gap: 6px; }
+.peg { width: clamp(28px, 9cqw, 38px); aspect-ratio: 1; border-radius: 50%; border: 2px dashed var(--ink-3); background: transparent; display: grid; place-items: center; font: 700 13px/1 var(--f-mono); color: #FFFFFF; text-shadow: 0 1px 1px rgba(0, 0, 0, .45); padding: 0; }
+.mm-row.empty .peg { width: 14px; border-width: 1.5px; }
+.peg.set { border: 0; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .16); }
+.peg.locked { outline: 2.5px solid var(--ink); outline-offset: 1px; }
+.mm-fb { font: 500 12.5px/1.3 var(--f-mono); color: var(--ink-2); text-align: right; white-space: nowrap; }
+.mm-fb b { color: var(--ink); }
+.pad .peg { width: 44px; height: 44px; cursor: pointer; font-size: 15px; }
+
+/* ---------- result sheet ---------- */
+.sheet { position: fixed; inset: 0; background: var(--scrim); display: grid; place-items: center; padding: 16px; z-index: 20; overflow: auto; }
+.card { background: var(--surface); border-radius: 22px; box-shadow: var(--shadow); padding: 24px; width: min(100%, 460px); display: grid; gap: 16px; border-top: 8px solid var(--t); animation: rise .28s cubic-bezier(.2, 1.2, .4, 1); }
+@keyframes rise { from { transform: translateY(18px) scale(.97); opacity: 0; } }
+.card h2 { font-size: 32px; font-weight: 800; line-height: 1.05; }
+.stars { display: flex; gap: 6px; }
+.stars svg { width: 34px; height: 34px; fill: var(--inset); stroke: var(--line); stroke-width: 1.2; }
+.stars svg.on { fill: var(--t); stroke: var(--t-deep); }
+.rgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 10px; }
+.rgrid div { display: grid; gap: 2px; }
+.rgrid dt, .k { font-size: 12px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .07em; font-weight: 600; }
+.rgrid dd { margin: 0; font: 600 18px/1.2 var(--f-mono); font-variant-numeric: tabular-nums; }
+.gate { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; font-size: 14.5px; color: var(--ink-2); }
+.gate strong { color: var(--ink); }
+.levelup { background: var(--ink); color: var(--bg); border-radius: 12px; padding: 12px 14px; font: 800 20px/1.2 var(--f-display); }
+.card .row { display: flex; gap: 10px; flex-wrap: wrap; }
+.card .row .btn { flex: 1 1 140px; }
+
+/* ---------- log + stats ---------- */
+.page-head { display: flex; align-items: flex-end; gap: 12px 16px; flex-wrap: wrap; }
+.page-head h1 { font-size: clamp(26px, 4vw, 36px); font-weight: 800; }
+.page-head p { color: var(--ink-2); flex: 1 1 280px; max-width: 62ch; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+select { font: inherit; font-size: 14.5px; padding: 8px 10px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); min-height: 40px; }
+.tablewrap { overflow-x: auto; background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 9px 12px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); }
+th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-3); font-weight: 700; background: var(--surface-2); position: sticky; top: 0; }
+td.num, th.num { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+tbody tr { cursor: pointer; }
+tbody tr:hover td { background: var(--surface-2); }
+tbody tr.open td { background: var(--surface-2); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 3px; background: var(--t); margin-right: 7px; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--inset); color: var(--ink-2); }
+.pill.solved { background: var(--good-soft); color: var(--good); }
+.pill.failed, .pill.abandoned { background: var(--bad-soft); color: var(--bad); }
+.detail td { white-space: normal; background: var(--surface-2); cursor: default; }
+.dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px 18px; }
+.dl div { min-width: 0; }
+.dl .v { font: 500 13px/1.4 var(--f-mono); overflow-wrap: anywhere; }
+.dl .full { grid-column: 1 / -1; }
+.dl .v.scroll { max-height: 110px; overflow: auto; background: var(--surface); border-radius: 8px; padding: 6px 8px; }
+.empty { padding: 34px 20px; text-align: center; color: var(--ink-2); }
+.empty b { display: block; font: 800 20px/1.2 var(--f-display); color: var(--ink); margin-bottom: 6px; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.tilestat { background: var(--surface); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow); display: grid; gap: 4px; }
+.tilestat .big { font: 800 30px/1.05 var(--f-display); font-variant-numeric: tabular-nums; }
+.tilestat .hint { font-size: 12.5px; color: var(--ink-3); }
+.panel { display: grid; gap: 10px; }
+.panel h2 { font-size: 20px; font-weight: 800; }
+.panel > p { color: var(--ink-2); font-size: 14.5px; max-width: 70ch; }
+.heat td, .heat th { text-align: center; white-space: nowrap; }
+.heat td:first-child, .heat th:first-child { text-align: left; }
+.hc { font: 600 13px/1.2 var(--f-mono); border-left: 2px solid var(--surface); border-bottom: 2px solid var(--surface); color: var(--ink); min-width: 62px; cursor: default; }
+.hc small { display: block; font-weight: 500; color: var(--ink-2); font-size: 11px; }
+.hc.s0 { background: var(--surface-2); color: var(--ink-3); }
+.hc.s1 { background: color-mix(in oklab, var(--logic) 14%, var(--surface)); }
+.hc.s2 { background: color-mix(in oklab, var(--logic) 30%, var(--surface)); }
+.hc.s3 { background: color-mix(in oklab, var(--logic) 48%, var(--surface)); }
+.hc.s4 { background: color-mix(in oklab, var(--logic) 68%, var(--surface)); }
+.heat tbody tr { cursor: default; }
+.legend { display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: var(--ink-3); flex-wrap: wrap; }
+.legend i { width: 22px; height: 12px; border-radius: 3px; display: inline-block; }
+.csvbox { width: 100%; min-height: 140px; font: 12px/1.4 var(--f-mono); border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); padding: 10px; }
+
+@media (max-width: 860px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .tracks { grid-template-columns: minmax(0, 1fr); }
+  .track-blurb { min-height: 0; }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .lane { grid-template-columns: 34px minmax(0, 1fr) auto; grid-template-areas: "no name count" "no run run"; row-gap: 6px; }
+  .lane-no { grid-area: no; } .lane-name { grid-area: name; } .lane-run { grid-area: run; } .lane-count { grid-area: count; }
+  .lane-count b { display: inline; }
+  .lane-run::after { top: -5px; bottom: -5px; }
+  .nav { margin-left: 0; width: 100%; }
+  .nav button { flex: 1; }
+  .rgrid dd { font-size: 16px; }
+  .tools .btn { flex-basis: 30%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+<div class="app" id="app">
+  <header class="top">
+    <button class="brand" data-nav="hub" id="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>Puzzle Triathlon</button>
+    <nav class="nav" aria-label="Sections">
+      <button data-nav="hub" class="on" id="nav-hub">Play</button>
+      <button data-nav="log" id="nav-log">Attempt log</button>
+      <button data-nav="stats" id="nav-stats">Stats</button>
+    </nav>
+    <div class="save" id="save-status" data-state="">Loading your progress…</div>
+  </header>
+
+  <main>
+    <section id="s-hub" class="stack">
+      <div class="hero">
+        <div>
+          <p class="eyebrow" id="hero-eyebrow">Level 1 of 10</p>
+          <h1 id="hero-title">Finish two puzzles in every lane to reach Level 2</h1>
+          <p class="sub" id="hero-sub">A solve counts if you used one hint at most, and one solve per lane must be hint-free. Your time never blocks a level. It only sets your stars.</p>
+        </div>
+        <div class="lanes" id="lanes"></div>
+      </div>
+      <div class="levelbar">
+        <span class="lbl" id="lv-label">Playing level</span>
+        <div class="levels" id="levels" role="group" aria-labelledby="lv-label"></div>
+        <span class="levelnote" id="lv-note"></span>
+      </div>
+      <div class="tracks" id="tracks"></div>
+    </section>
+
+    <section id="s-play" hidden>
+      <div class="play">
+        <div class="playbar">
+          <button class="btn small" id="btn-back">Back to lanes</button>
+          <div class="ptitle"><h2 id="p-name">Puzzle</h2><span class="lvtag" id="p-level">Level 1</span></div>
+          <div class="stopwatch"><span class="t" id="timer" aria-label="Elapsed time">0:00</span><button id="btn-pause">Pause</button></div>
+        </div>
+        <div class="leave" id="leave-bar" hidden>
+          <span>Leave this puzzle? It will be logged as abandoned.</span>
+          <button class="btn small" id="btn-leave-yes">Leave</button>
+          <button class="btn small" id="btn-leave-no">Keep playing</button>
+        </div>
+        <p class="goal" id="p-goal"></p>
+        <div class="stage">
+          <div class="board" id="board"></div>
+          <div class="cover" id="cooking" hidden><div class="pot" aria-hidden="true"><i></i><i></i><i></i></div><h3>Cooking up a fresh puzzle</h3><p>Built from a new seed and checked by a solver.</p></div>
+          <div class="cover" id="paused" hidden><h3>Paused</h3><p>The clock is stopped and the board is hidden.</p><button class="btn primary" id="btn-resume">Resume</button></div>
+        </div>
+        <p class="msg" id="p-msg" aria-live="polite"></p>
+        <div class="pad" id="pad"></div>
+        <div class="tools">
+          <button class="btn" id="t-undo">Undo</button>
+          <button class="btn" id="t-notes">Notes</button>
+          <button class="btn" id="t-hint">Hint</button>
+          <button class="btn" id="t-check">Check</button>
+          <button class="btn" id="t-restart">Restart</button>
+        </div>
+        <details class="howto"><summary>How to play</summary><ul id="p-rules"></ul></details>
+      </div>
+    </section>
+
+    <section id="s-log" class="stack" hidden>
+      <div class="page-head">
+        <h1>Attempt log</h1>
+        <p id="log-sub">Every attempt is recorded here, solved or not. Select a row for the full record.</p>
+        <div class="filters">
+          <select id="f-track" aria-label="Filter by lane"><option value="">All lanes</option><option value="math">Maths</option><option value="analytical">Analytical</option><option value="logic">Logic</option></select>
+          <select id="f-outcome" aria-label="Filter by result"><option value="">All results</option><option value="solved">Solved</option><option value="failed">Failed</option><option value="abandoned">Abandoned</option></select>
+          <button class="btn small" id="btn-csv">Export CSV</button>
+        </div>
+      </div>
+      <div id="csv-fallback" hidden>
+        <p class="levelnote">This view can't save files. Copy the CSV below.</p>
+        <textarea class="csvbox" id="csv-text" readonly aria-label="CSV export"></textarea>
+      </div>
+      <div class="tablewrap" id="log-table"></div>
+    </section>
+
+    <section id="s-stats" class="stack" hidden>
+      <div class="page-head"><h1>Stats</h1><p>Read from your attempt log. Use it to see where a level is too easy or too hard.</p></div>
+      <div id="stats-body" class="stack"></div>
+    </section>
+  </main>
+</div>
+
+<div class="sheet" id="result" hidden></div>
+
+<script id="engines">
+/* Puzzle Triathlon engines: seeded generators and solvers for nine puzzle types.
+   Runs in the page, in a Web Worker, and in Node (for tests). */
+(function (root) {
+'use strict';
+var GEN_VERSION = '1.0.0';
+
+/* ================= seeded RNG ================= */
+function cyrb128(str) {
+  var h1 = 1779033703, h2 = 3144134277, h3 = 1013904242, h4 = 2773480762;
+  for (var i = 0, k; i < str.length; i++) {
+    k = str.charCodeAt(i);
+    h1 = h2 ^ Math.imul(h1 ^ k, 597399067);
+    h2 = h3 ^ Math.imul(h2 ^ k, 2869860233);
+    h3 = h4 ^ Math.imul(h3 ^ k, 951274213);
+    h4 = h1 ^ Math.imul(h4 ^ k, 2716044179);
+  }
+  h1 = Math.imul(h3 ^ (h1 >>> 18), 597399067);
+  h2 = Math.imul(h4 ^ (h2 >>> 22), 2869860233);
+  h3 = Math.imul(h1 ^ (h3 >>> 17), 951274213);
+  h4 = Math.imul(h2 ^ (h4 >>> 19), 2716044179);
+  h1 ^= (h2 ^ h3 ^ h4); h2 ^= h1; h3 ^= h1; h4 ^= h1;
+  return [h1 >>> 0, h2 >>> 0, h3 >>> 0, h4 >>> 0];
+}
+function sfc32(a, b, c, d) {
+  return function () {
+    a |= 0; b |= 0; c |= 0; d |= 0;
+    var t = (a + b | 0) + d | 0;
+    d = d + 1 | 0;
+    a = b ^ b >>> 9;
+    b = c + (c << 3) | 0;
+    c = (c << 21 | c >>> 11);
+    c = c + t | 0;
+    return (t >>> 0) / 4294967296;
+  };
+}
+function makeRng(seed) {
+  var h = cyrb128(String(seed));
+  var r = sfc32(h[0], h[1], h[2], h[3]);
+  for (var i = 0; i < 15; i++) r();
+  return r;
+}
+function ri(rng, n) { return Math.floor(rng() * n); }
+function shuffle(rng, a) {
+  for (var i = a.length - 1; i > 0; i--) { var j = ri(rng, i + 1); var t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+function range(n) { var a = new Array(n); for (var i = 0; i < n; i++) a[i] = i; return a; }
+function pick(rng, a) { return a[ri(rng, a.length)]; }
+function wpick(rng, items, weights) {
+  var s = 0, i; for (i = 0; i < weights.length; i++) s += weights[i];
+  var x = rng() * s;
+  for (i = 0; i < items.length; i++) { x -= weights[i]; if (x < 0) return items[i]; }
+  return items[items.length - 1];
+}
+function pop(m) { var c = 0; while (m) { m &= m - 1; c++; } return c; }
+
+/* ================= SUDOKU ================= */
+var SG = {};
+function sudGeom(N) {
+  if (SG[N]) return SG[N];
+  var br = N === 9 ? 3 : 2, bc = N === 4 ? 2 : 3;
+  var perRow = N / bc, units = [], boxOf = new Int8Array(N * N), r, c, i;
+  for (r = 0; r < N; r++) { var row = []; for (c = 0; c < N; c++) row.push(r * N + c); units.push(row); }
+  for (c = 0; c < N; c++) { var col = []; for (r = 0; r < N; r++) col.push(r * N + c); units.push(col); }
+  for (i = 0; i < N; i++) units.push([]);
+  for (r = 0; r < N; r++) for (c = 0; c < N; c++) {
+    var b = Math.floor(r / br) * perRow + Math.floor(c / bc);
+    boxOf[r * N + c] = b; units[2 * N + b].push(r * N + c);
+  }
+  var peers = [];
+  for (i = 0; i < N * N; i++) {
+    var set = {}; r = Math.floor(i / N); c = i % N;
+    [units[r], units[N + c], units[2 * N + boxOf[i]]].forEach(function (u) { u.forEach(function (j) { if (j !== i) set[j] = 1; }); });
+    peers.push(Object.keys(set).map(Number));
+  }
+  return (SG[N] = { N: N, br: br, bc: bc, units: units, peers: peers, boxOf: boxOf });
+}
+function sudCands(g, val, i) {
+  var m = (1 << g.N) - 1, p = g.peers[i];
+  for (var k = 0; k < p.length; k++) if (val[p[k]]) m &= ~(1 << (val[p[k]] - 1));
+  return m;
+}
+function sudFill(g, rng) {
+  var N = g.N, NN = N * N, val = new Int8Array(NN);
+  function rec() {
+    var best = -1, bm = 0, bcnt = 99;
+    for (var i = 0; i < NN; i++) if (!val[i]) {
+      var m = sudCands(g, val, i), c = pop(m);
+      if (c === 0) return false;
+      if (c < bcnt) { bcnt = c; best = i; bm = m; if (c === 1) break; }
+    }
+    if (best < 0) return true;
+    var ds = []; for (var d = 0; d < N; d++) if (bm >> d & 1) ds.push(d + 1);
+    shuffle(rng, ds);
+    for (var k = 0; k < ds.length; k++) { val[best] = ds[k]; if (rec()) return true; }
+    val[best] = 0; return false;
+  }
+  rec(); return val;
+}
+function sudCount(g, givens, limit) {
+  var N = g.N, NN = N * N, val = Int8Array.from(givens), count = 0;
+  function rec() {
+    var best = -1, bm = 0, bcnt = 99;
+    for (var i = 0; i < NN; i++) if (!val[i]) {
+      var m = sudCands(g, val, i), c = pop(m);
+      if (c === 0) return;
+      if (c < bcnt) { bcnt = c; best = i; bm = m; if (c === 1) break; }
+    }
+    if (best < 0) { count++; return; }
+    for (var d = 0; d < N; d++) if (bm >> d & 1) { val[best] = d + 1; rec(); if (count >= limit) break; }
+    val[best] = 0;
+  }
+  rec(); return count;
+}
+/* Human-style solver. Tiers: 1 singles, 2 locked candidates, 3 pairs, 4 triples, 5 X-wing. */
+function sudLogic(g, givens, maxTier) {
+  var N = g.N, NN = N * N, units = g.units, peers = g.peers, boxOf = g.boxOf, all = (1 << N) - 1;
+  var val = Int8Array.from(givens), cand = new Int32Array(NN), left = 0, used = 0, adv = 0, i;
+  for (i = 0; i < NN; i++) if (!val[i]) { cand[i] = sudCands(g, val, i); left++; }
+  function place(c, d) {
+    val[c] = d; cand[c] = 0; left--;
+    var b = ~(1 << (d - 1)), p = peers[c];
+    for (var k = 0; k < p.length; k++) cand[p[k]] &= b;
+  }
+  function rowOf(c) { return (c / N) | 0; }
+  function colOf(c) { return c % N; }
+  for (;;) {
+    if (left === 0) break;
+    var prog = false, ui, u, d, b, k, a, m;
+    for (i = 0; i < NN; i++) if (!val[i]) {
+      m = cand[i];
+      if (m === 0) return { solved: false, used: used, bad: true, val: val };
+      if ((m & (m - 1)) === 0) { place(i, 32 - Math.clz32(m)); prog = true; }
+    }
+    if (prog) { if (used < 1) used = 1; continue; }
+    for (ui = 0; ui < units.length; ui++) {
+      u = units[ui];
+      for (d = 0; d < N; d++) {
+        b = 1 << d; var cnt = 0, at = -1;
+        for (k = 0; k < N; k++) { i = u[k]; if (val[i] === d + 1) { cnt = -1; break; } if (!val[i] && (cand[i] & b)) { cnt++; at = i; } }
+        if (cnt === 1) { place(at, d + 1); prog = true; }
+      }
+    }
+    if (prog) { if (used < 1) used = 1; continue; }
+    if (maxTier < 2) break;
+    /* locked candidates */
+    for (ui = 0; ui < units.length; ui++) {
+      u = units[ui];
+      for (d = 0; d < N; d++) {
+        b = 1 << d; var cs = [];
+        for (k = 0; k < N; k++) { i = u[k]; if (!val[i] && (cand[i] & b)) cs.push(i); }
+        if (cs.length < 2) continue;
+        var j, tgt;
+        if (ui >= 2 * N) {
+          var r0 = rowOf(cs[0]), c0 = colOf(cs[0]), sameR = true, sameC = true;
+          for (k = 1; k < cs.length; k++) { if (rowOf(cs[k]) !== r0) sameR = false; if (colOf(cs[k]) !== c0) sameC = false; }
+          if (sameR) { tgt = units[r0]; for (k = 0; k < N; k++) { j = tgt[k]; if (!val[j] && boxOf[j] !== boxOf[cs[0]] && (cand[j] & b)) { cand[j] &= ~b; prog = true; } } }
+          if (sameC) { tgt = units[N + c0]; for (k = 0; k < N; k++) { j = tgt[k]; if (!val[j] && boxOf[j] !== boxOf[cs[0]] && (cand[j] & b)) { cand[j] &= ~b; prog = true; } } }
+        } else {
+          var b0 = boxOf[cs[0]], sameB = true;
+          for (k = 1; k < cs.length; k++) if (boxOf[cs[k]] !== b0) sameB = false;
+          if (sameB) {
+            tgt = units[2 * N + b0];
+            for (k = 0; k < N; k++) {
+              j = tgt[k];
+              var inU = ui < N ? rowOf(j) === ui : colOf(j) === ui - N;
+              if (!val[j] && !inU && (cand[j] & b)) { cand[j] &= ~b; prog = true; }
+            }
+          }
+        }
+      }
+    }
+    if (prog) { if (used < 2) used = 2; adv++; continue; }
+    if (maxTier < 3) break;
+    /* naked + hidden pairs */
+    for (ui = 0; ui < units.length; ui++) {
+      u = units[ui];
+      var em = []; for (k = 0; k < N; k++) if (!val[u[k]]) em.push(u[k]);
+      for (a = 0; a < em.length; a++) for (b = a + 1; b < em.length; b++) {
+        m = cand[em[a]];
+        if (m === cand[em[b]] && pop(m) === 2) {
+          for (k = 0; k < em.length; k++) if (k !== a && k !== b && (cand[em[k]] & m)) { cand[em[k]] &= ~m; prog = true; }
+        }
+      }
+      var posm = [];
+      for (d = 0; d < N; d++) { m = 0; for (k = 0; k < N; k++) if (!val[u[k]] && (cand[u[k]] >> d & 1)) m |= 1 << k; posm.push(m); }
+      for (a = 0; a < N; a++) for (b = a + 1; b < N; b++) {
+        if (posm[a] && posm[a] === posm[b] && pop(posm[a]) === 2) {
+          var keep = (1 << a) | (1 << b);
+          for (k = 0; k < N; k++) if (posm[a] >> k & 1) { if (cand[u[k]] & ~keep) { cand[u[k]] &= keep; prog = true; } }
+        }
+      }
+    }
+    if (prog) { if (used < 3) used = 3; adv++; continue; }
+    if (maxTier < 4) break;
+    /* naked + hidden triples */
+    for (ui = 0; ui < units.length; ui++) {
+      u = units[ui];
+      var e2 = []; for (k = 0; k < N; k++) if (!val[u[k]]) e2.push(u[k]);
+      var x, y, z;
+      if (e2.length > 3) {
+        for (x = 0; x < e2.length; x++) for (y = x + 1; y < e2.length; y++) for (z = y + 1; z < e2.length; z++) {
+          m = cand[e2[x]] | cand[e2[y]] | cand[e2[z]];
+          if (pop(m) === 3) {
+            for (k = 0; k < e2.length; k++) if (k !== x && k !== y && k !== z && (cand[e2[k]] & m)) { cand[e2[k]] &= ~m; prog = true; }
+          }
+        }
+        var pm = [];
+        for (d = 0; d < N; d++) { m = 0; for (k = 0; k < N; k++) if (!val[u[k]] && (cand[u[k]] >> d & 1)) m |= 1 << k; pm.push(m); }
+        for (x = 0; x < N; x++) if (pm[x]) for (y = x + 1; y < N; y++) if (pm[y]) for (z = y + 1; z < N; z++) if (pm[z]) {
+          m = pm[x] | pm[y] | pm[z];
+          if (pop(m) === 3) {
+            var kp = (1 << x) | (1 << y) | (1 << z);
+            for (k = 0; k < N; k++) if (m >> k & 1) { if (cand[u[k]] & ~kp) { cand[u[k]] &= kp; prog = true; } }
+          }
+        }
+      }
+    }
+    if (prog) { if (used < 4) used = 4; adv++; continue; }
+    if (maxTier < 5) break;
+    /* X-wing */
+    for (d = 0; d < N; d++) {
+      b = 1 << d;
+      for (var orient = 0; orient < 2; orient++) {
+        var masks = [], l, l2, l3;
+        for (l = 0; l < N; l++) {
+          m = 0;
+          for (k = 0; k < N; k++) { i = orient ? k * N + l : l * N + k; if (!val[i] && (cand[i] & b)) m |= 1 << k; }
+          masks.push(m);
+        }
+        for (l = 0; l < N; l++) if (pop(masks[l]) === 2) for (l2 = l + 1; l2 < N; l2++) if (masks[l2] === masks[l]) {
+          for (l3 = 0; l3 < N; l3++) if (l3 !== l && l3 !== l2) for (k = 0; k < N; k++) if (masks[l] >> k & 1) {
+            i = orient ? k * N + l3 : l3 * N + k;
+            if (!val[i] && (cand[i] & b)) { cand[i] &= ~b; prog = true; }
+          }
+        }
+      }
+    }
+    if (prog) { if (used < 5) used = 5; adv++; continue; }
+    break;
+  }
+  return { solved: left === 0, used: used, adv: adv, val: val };
+}
+/* Next single for a hint: returns {cell, digit, why} or null. */
+function sudHint(N, grid) {
+  var g = sudGeom(N), NN = N * N, i, d, k;
+  for (i = 0; i < NN; i++) if (!grid[i]) {
+    var m = sudCands(g, grid, i);
+    if (m && (m & (m - 1)) === 0) return { cell: i, digit: 32 - Math.clz32(m), why: 'it is the only digit that fits this cell' };
+  }
+  var names = ['row', 'column', 'box'];
+  for (var ui = 0; ui < g.units.length; ui++) {
+    var u = g.units[ui];
+    for (d = 0; d < N; d++) {
+      var cnt = 0, at = -1;
+      for (k = 0; k < N; k++) { i = u[k]; if (grid[i] === d + 1) { cnt = -1; break; } if (!grid[i] && (sudCands(g, grid, i) >> d & 1)) { cnt++; at = i; } }
+      if (cnt === 1) return { cell: at, digit: d + 1, why: 'it is the only place for ' + (d + 1) + ' in this ' + names[Math.floor(ui / N)] };
+    }
+  }
+  return null;
+}
+var SUD_LEVELS = [
+  { N: 4, tier: 1, givens: 8, tries: 1, need: 0 },
+  { N: 6, tier: 1, givens: 16, tries: 1, need: 0 },
+  { N: 9, tier: 1, givens: 40, tries: 1, need: 0 },
+  { N: 9, tier: 1, givens: 34, tries: 1, need: 0 },
+  { N: 9, tier: 1, givens: 0, tries: 1, need: 0 },
+  { N: 9, tier: 2, givens: 0, tries: 24, need: 20 },
+  { N: 9, tier: 3, givens: 0, tries: 45, need: 30 },
+  { N: 9, tier: 4, givens: 0, tries: 90, need: 33 },
+  { N: 9, tier: 5, givens: 0, tries: 130, need: 40 },
+  { N: 9, tier: 6, givens: 0, tries: 25, need: 60 }
+];
+var SUD_TIER_NAMES = ['', 'singles', 'locked candidates', 'pairs', 'triples', 'X-wing', 'chains or trial'];
+function genSudoku(level, rng) {
+  var P = SUD_LEVELS[level - 1], g = sudGeom(P.N), NN = P.N * P.N, best = null;
+  for (var t = 0; t < P.tries; t++) {
+    var sol = sudFill(g, rng), puz = Int8Array.from(sol), order = shuffle(rng, range(NN)), givens = NN;
+    for (var k = 0; k < NN; k++) {
+      if (givens <= P.givens) break;
+      var i = order[k], keep = puz[i]; puz[i] = 0;
+      var ok = P.tier >= 6 ? sudCount(g, puz, 2) === 1 : sudLogic(g, puz, P.tier).solved;
+      if (ok) givens--; else puz[i] = keep;
+    }
+    var gr = sudLogic(g, puz, 5), tier = gr.solved ? gr.used : 6;
+    var score = tier * 10 + (gr.solved ? Math.min(gr.adv, 9) : 0);
+    var cand = { puz: puz, sol: sol, tier: tier, givens: givens, score: score };
+    if (score >= P.need) { best = cand; break; }
+    if (!best || score > best.score) best = cand;
+  }
+  return {
+    params: { size: P.N, target_technique: SUD_TIER_NAMES[P.tier], givens: best.givens },
+    puzzle: { N: P.N, br: g.br, bc: g.bc, givens: Array.from(best.puz), solution: Array.from(best.sol) },
+    difficulty: best.score, difficulty_label: 'hardest technique: ' + SUD_TIER_NAMES[best.tier], optimal: null
+  };
+}
+
+/* ================= KENKEN ================= */
+function latin(n, rng) {
+  var rows = shuffle(rng, range(n)), cols = shuffle(rng, range(n)), sym = shuffle(rng, range(n)), g = new Array(n * n);
+  for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) g[r * n + c] = sym[(rows[r] + cols[c]) % n] + 1;
+  return g;
+}
+function nbrs(n, i) {
+  var r = (i / n) | 0, c = i % n, out = [];
+  if (r > 0) out.push(i - n); if (r < n - 1) out.push(i + n); if (c > 0) out.push(i - 1); if (c < n - 1) out.push(i + 1);
+  return out;
+}
+function kkLabel(cells, sol, ops, n, rng) {
+  var vals = cells.map(function (c) { return sol[c]; });
+  if (cells.length === 1) return { cells: cells, op: '=', target: vals[0] };
+  var sum = 0, prod = 1; vals.forEach(function (v) { sum += v; prod *= v; });
+  var opts = [], w = [];
+  if (cells.length === 2) {
+    var hi = Math.max(vals[0], vals[1]), lo = Math.min(vals[0], vals[1]);
+    opts.push('+'); w.push(2);
+    if (ops.indexOf('-') >= 0) { opts.push('-'); w.push(2.5); }
+    if (ops.indexOf('x') >= 0) { opts.push('x'); w.push(2); }
+    if (ops.indexOf('/') >= 0 && hi % lo === 0) { opts.push('/'); w.push(5); }
+    var op = wpick(rng, opts, w);
+    return { cells: cells, op: op, target: op === '+' ? sum : op === '-' ? hi - lo : op === 'x' ? prod : hi / lo };
+  }
+  opts.push('+'); w.push(3);
+  if (ops.indexOf('x') >= 0) { opts.push('x'); w.push(2); }
+  var o = wpick(rng, opts, w);
+  return { cells: cells, op: o, target: o === '+' ? sum : prod };
+}
+function kkCages(n, sol, P, rng) {
+  var cageOf = new Int16Array(n * n).fill(-1), cages = [], sizes = [], weights = [], s;
+  var W = { 2: [[1, 2], [1, 9]], 3: [[1, 2, 3], [0.7, 5, 4.3]], 4: [[1, 2, 3, 4], [0.4, 3.4, 4, 2.2]] }[P.maxCage];
+  sizes = W[0]; weights = W[1];
+  var order = shuffle(rng, range(n * n));
+  for (var k = 0; k < order.length; k++) {
+    s = order[k]; if (cageOf[s] >= 0) continue;
+    var size = wpick(rng, sizes, weights), cells = [s]; cageOf[s] = cages.length;
+    while (cells.length < size) {
+      var nb = [];
+      cells.forEach(function (c) { nbrs(n, c).forEach(function (x) { if (cageOf[x] < 0) nb.push(x); }); });
+      if (!nb.length) break;
+      var x = pick(rng, nb); cageOf[x] = cages.length; cells.push(x);
+    }
+    cages.push(cells);
+  }
+  return cages.map(function (cells) { return kkLabel(cells, sol, P.ops, n, rng); });
+}
+/* Looks for a solution that differs from `intended`. Returns {found, limit, nodes}. */
+function kkSolve(n, cages, intended, nodeLimit) {
+  var sorted = cages.slice().sort(function (a, b) { return a.cells.length - b.cells.length; });
+  var cells = [], cg = [], posIn = [];
+  sorted.forEach(function (c) {
+    var o = { op: c.op, target: c.target, len: c.cells.length, acc: c.op === 'x' ? 1 : 0 };
+    c.cells.forEach(function (cell, k) { cells.push(cell); cg.push(o); posIn.push(k); });
+  });
+  var total = cells.length, rowM = new Int32Array(n), colM = new Int32Array(n), val = new Int8Array(n * n);
+  var nodes = 0, found = null, limit = false;
+  function rec(k) {
+    if (k === total) {
+      for (var i = 0; i < total; i++) if (val[i] !== intended[i]) { found = Array.from(val); return true; }
+      return false;
+    }
+    if (++nodes > nodeLimit) { limit = true; return true; }
+    var cell = cells[k], c = cg[k], r = (cell / n) | 0, col = cell % n, pos = posIn[k], last = pos === c.len - 1, t = c.target, acc = c.acc;
+    for (var d = 1; d <= n; d++) {
+      var bit = 1 << d;
+      if ((rowM[r] & bit) || (colM[col] & bit)) continue;
+      var nacc = acc;
+      switch (c.op) {
+        case '=': if (d !== t) continue; break;
+        case '+': nacc = acc + d; var rem = c.len - 1 - pos; if (nacc + rem > t || nacc + rem * n < t) continue; break;
+        case 'x': nacc = acc * d; if (t % nacc !== 0) continue; if (last && nacc !== t) continue; break;
+        case '-': if (pos === 0) { nacc = d; if (d + t > n && d - t < 1) continue; } else if (Math.abs(acc - d) !== t) continue; break;
+        case '/': if (pos === 0) { nacc = d; if (d * t > n && d % t !== 0) continue; } else { var a = Math.max(acc, d), b = Math.min(acc, d); if (a !== b * t) continue; } break;
+      }
+      rowM[r] |= bit; colM[col] |= bit; val[cell] = d; c.acc = nacc;
+      var stop = rec(k + 1);
+      rowM[r] &= ~bit; colM[col] &= ~bit; val[cell] = 0; c.acc = acc;
+      if (stop) return true;
+    }
+    return false;
+  }
+  rec(0);
+  return { found: found, limit: limit, nodes: nodes };
+}
+function components(n, cells) {
+  var set = {}, out = []; cells.forEach(function (c) { set[c] = 1; });
+  cells.forEach(function (c) {
+    if (!set[c]) return;
+    var comp = [], st = [c]; set[c] = 0;
+    while (st.length) { var x = st.pop(); comp.push(x); nbrs(n, x).forEach(function (y) { if (set[y]) { set[y] = 0; st.push(y); } }); }
+    out.push(comp);
+  });
+  return out;
+}
+var KK_LEVELS = [
+  { n: 3, ops: '+', maxCage: 2, maxSingles: 3 },
+  { n: 4, ops: '+-', maxCage: 2, maxSingles: 4 },
+  { n: 4, ops: '+-x', maxCage: 3, maxSingles: 3 },
+  { n: 5, ops: '+-x', maxCage: 3, maxSingles: 4 },
+  { n: 5, ops: '+-x/', maxCage: 3, maxSingles: 3 },
+  { n: 6, ops: '+-x/', maxCage: 3, maxSingles: 4 },
+  { n: 6, ops: '+-x/', maxCage: 4, maxSingles: 3 },
+  { n: 7, ops: '+-x/', maxCage: 3, maxSingles: 5 },
+  { n: 8, ops: '+-x/', maxCage: 4, maxSingles: 6 },
+  { n: 9, ops: '+-x/', maxCage: 4, maxSingles: 8 }
+];
+function genKenken(level, rng) {
+  var P = KK_LEVELS[level - 1], n = P.n, best = null;
+  for (var attempt = 0; attempt < 200; attempt++) {
+    var sol = latin(n, rng), cages = kkCages(n, sol, P, rng), ok = false, nodes = 0;
+    for (var fix = 0; fix < 14; fix++) {
+      var singles = cages.filter(function (c) { return c.cells.length === 1; }).length;
+      if (singles > P.maxSingles + (attempt > 60 ? 2 : 0)) break;
+      var res = kkSolve(n, cages, sol, 250000);
+      if (res.limit) break;
+      if (!res.found) { ok = true; nodes = res.nodes; break; }
+      var diff = []; for (var i = 0; i < n * n; i++) if (res.found[i] !== sol[i]) diff.push(i);
+      var cell = pick(rng, diff), ci = -1;
+      cages.forEach(function (c, k) { if (c.cells.indexOf(cell) >= 0) ci = k; });
+      var old = cages[ci]; cages.splice(ci, 1);
+      cages.push(kkLabel([cell], sol, P.ops, n, rng));
+      components(n, old.cells.filter(function (c) { return c !== cell; })).forEach(function (comp) { cages.push(kkLabel(comp, sol, P.ops, n, rng)); });
+    }
+    if (ok) { best = { sol: sol, cages: cages, nodes: nodes }; break; }
+  }
+  if (!best) { /* fallback: every cell given */ var s2 = latin(n, rng); best = { sol: s2, cages: s2.map(function (v, i) { return { cells: [i], op: '=', target: v }; }), nodes: 0 }; }
+  best.cages.forEach(function (c) { c.cells.sort(function (a, b) { return a - b; }); });
+  return {
+    params: { size: n, operators: P.ops, max_cage: P.maxCage, cages: best.cages.length },
+    puzzle: { n: n, cages: best.cages, solution: best.sol },
+    difficulty: best.nodes, difficulty_label: 'solver search nodes: ' + best.nodes, optimal: null
+  };
+}
+
+/* ================= MATH MAZE ================= */
+var MM_LEVELS = [
+  { R: 3, C: 3, ops: '+', maxSol: 3 },
+  { R: 3, C: 3, ops: '+-', maxSol: 2 },
+  { R: 4, C: 4, ops: '+-', maxSol: 6 },
+  { R: 4, C: 4, ops: '+-x', maxSol: 3 },
+  { R: 4, C: 4, ops: '+-x/', maxSol: 1 },
+  { R: 5, C: 5, ops: '+-', maxSol: 40 },
+  { R: 5, C: 5, ops: '+-x', maxSol: 8 },
+  { R: 5, C: 5, ops: '+-x/', maxSol: 2 },
+  { R: 5, C: 6, ops: '+-x', maxSol: 2 },
+  { R: 6, C: 6, ops: '+-x/', maxSol: 1 }
+];
+function mmApply(total, cell) {
+  switch (cell.op) {
+    case '+': return total + cell.v;
+    case '-': return total - cell.v;
+    case 'x': return total * cell.v;
+    case '/': return total % cell.v === 0 ? total / cell.v : null;
+  }
+  return total;
+}
+function mmEnumerate(R, C, cells, onEnd) {
+  var n = R * C, visited = new Uint8Array(n), path = [0], goal = n - 1;
+  visited[0] = 1;
+  function rec(i, total) {
+    if (i === goal) return onEnd(total, path);
+    var r = (i / C) | 0, c = i % C, nx;
+    for (var k = 0; k < 4; k++) {
+      if (k === 0) { if (c >= C - 1) continue; nx = i + 1; }
+      else if (k === 1) { if (r >= R - 1) continue; nx = i + C; }
+      else if (k === 2) { if (c <= 0) continue; nx = i - 1; }
+      else { if (r <= 0) continue; nx = i - C; }
+      if (visited[nx]) continue;
+      var t = mmApply(total, cells[nx]); if (t === null) continue;
+      visited[nx] = 1; path.push(nx);
+      var stop = rec(nx, t);
+      visited[nx] = 0; path.pop();
+      if (stop) return true;
+    }
+    return false;
+  }
+  rec(0, cells[0].v);
+}
+function genMaze(level, rng) {
+  var P = MM_LEVELS[level - 1], R = P.R, C = P.C, n = R * C, out = null;
+  var opList = P.ops.split(''), opW = opList.map(function (o) { return { '+': 4, '-': 3, 'x': 1.1, '/': 1.1 }[o]; });
+  for (var attempt = 0; attempt < 80 && !out; attempt++) {
+    var cells = [{ op: 's', v: 1 + ri(rng, 9) }];
+    for (var i = 1; i < n; i++) {
+      var op = wpick(rng, opList, opW);
+      cells.push({ op: op, v: (op === 'x' || op === '/') ? 2 + ri(rng, 2) : 1 + ri(rng, 9) });
+    }
+    var hist = new Map(), paths = 0, lo = Infinity, hi = -Infinity;
+    mmEnumerate(R, C, cells, function (t) { paths++; hist.set(t, (hist.get(t) || 0) + 1); if (t < lo) lo = t; if (t > hi) hi = t; return false; });
+    var relax = attempt > 40 ? 3 : 1, cands = [];
+    hist.forEach(function (cnt, t) {
+      if (cnt > P.maxSol * relax) return;
+      if (t < (level <= 4 ? 1 : -60) || t > 199) return;
+      if ((t === lo || t === hi) && level > 2) return;
+      cands.push(t);
+    });
+    if (!cands.length) continue;
+    cands.sort(function (a, b) { return a - b; });
+    var target = pick(rng, cands), solution = null;
+    mmEnumerate(R, C, cells, function (t, path) { if (t === target) { solution = path.slice(); return true; } return false; });
+    out = { cells: cells, target: target, solution: solution, paths: paths, sols: hist.get(target) };
+  }
+  if (!out) {
+    /* fallback: target of the straight edge path */
+    var cs = [{ op: 's', v: 3 }]; for (var j = 1; j < n; j++) cs.push({ op: '+', v: 1 + ri(rng, 9) });
+    var sp = [0], q; for (q = 1; q < C; q++) sp.push(q); for (q = 1; q < R; q++) sp.push(q * C + C - 1);
+    var tt = cs[0].v; sp.slice(1).forEach(function (x) { tt += cs[x].v; });
+    out = { cells: cs, target: tt, solution: sp, paths: 0, sols: 1 };
+  }
+  return {
+    params: { rows: R, cols: C, operators: P.ops, total_paths: out.paths, solution_paths: out.sols },
+    puzzle: { R: R, C: C, cells: out.cells, target: out.target, solution: out.solution },
+    difficulty: out.paths ? Math.round(out.paths / out.sols) : 1,
+    difficulty_label: out.sols + ' of ' + out.paths + ' routes reach the target', optimal: out.solution.length - 1
+  };
+}
+
+/* ================= SLIDING TILES ================= */
+var S3 = null;
+var FACT = [1, 1, 2, 6, 24, 120, 720, 5040, 40320];
+function permRank(p) {
+  var r = 0;
+  for (var i = 0; i < 9; i++) { var c = 0; for (var j = i + 1; j < 9; j++) if (p[j] < p[i]) c++; r += c * FACT[8 - i]; }
+  return r;
+}
+function permUnrank(r) {
+  var items = [0, 1, 2, 3, 4, 5, 6, 7, 8], p = [];
+  for (var i = 0; i < 9; i++) { var f = FACT[8 - i], k = Math.floor(r / f); r %= f; p.push(items[k]); items.splice(k, 1); }
+  return p;
+}
+function slide3() {
+  if (S3) return S3;
+  var dist = new Int8Array(362880).fill(-1), queue = new Int32Array(181440), head = 0, tail = 0;
+  var goal = [1, 2, 3, 4, 5, 6, 7, 8, 0], gr = permRank(goal), starts = [0];
+  dist[gr] = 0; queue[tail++] = gr;
+  while (head < tail) {
+    var r = queue[head++], p = permUnrank(r), d = dist[r], z = p.indexOf(0), zr = (z / 3) | 0, zc = z % 3;
+    if (starts.length <= d) starts[d] = head - 1;
+    var moves = []; if (zr > 0) moves.push(z - 3); if (zr < 2) moves.push(z + 3); if (zc > 0) moves.push(z - 1); if (zc < 2) moves.push(z + 1);
+    for (var k = 0; k < moves.length; k++) {
+      var m = moves[k]; p[z] = p[m]; p[m] = 0;
+      var nr = permRank(p);
+      if (dist[nr] < 0) { dist[nr] = d + 1; queue[tail++] = nr; }
+      p[m] = p[z]; p[z] = 0;
+    }
+  }
+  starts.push(tail);
+  return (S3 = { dist: dist, queue: queue, starts: starts });
+}
+function slide3Dist(tiles) { return slide3().dist[permRank(tiles)]; }
+function manhattan(n, tiles) {
+  var s = 0;
+  for (var i = 0; i < tiles.length; i++) { var t = tiles[i]; if (!t) continue; var g = t - 1; s += Math.abs(((i / n) | 0) - ((g / n) | 0)) + Math.abs(i % n - g % n); }
+  return s;
+}
+var SL_LEVELS = [
+  { n: 3, lo: 6, hi: 8 }, { n: 3, lo: 10, hi: 12 }, { n: 3, lo: 14, hi: 16 }, { n: 3, lo: 18, hi: 20 },
+  { n: 3, lo: 22, hi: 25 }, { n: 3, lo: 26, hi: 31 },
+  { n: 4, lo: 14, hi: 20 }, { n: 4, lo: 21, hi: 28 }, { n: 4, lo: 29, hi: 36 }, { n: 4, lo: 37, hi: 48 }
+];
+function genSliding(level, rng) {
+  var P = SL_LEVELS[level - 1];
+  if (P.n === 3) {
+    var T = slide3(), a = T.starts[P.lo], b = T.starts[Math.min(P.hi + 1, T.starts.length - 1)];
+    var r = T.queue[a + ri(rng, b - a)], tiles = permUnrank(r);
+    return { params: { size: 3, optimal_range: [P.lo, P.hi] }, puzzle: { n: 3, tiles: tiles }, difficulty: T.dist[r], difficulty_label: 'shortest solution: ' + T.dist[r] + ' moves', optimal: T.dist[r] };
+  }
+  var best = null, bestGap = 1e9;
+  for (var t = 0; t < 4000; t++) {
+    var g = range(16).map(function (i) { return (i + 1) % 16; }), z = 15, prev = -1, len = 20 + ri(rng, 300);
+    for (var s = 0; s < len; s++) {
+      var zr = (z / 4) | 0, zc = z % 4, mv = [];
+      if (zr > 0) mv.push(z - 4); if (zr < 3) mv.push(z + 4); if (zc > 0) mv.push(z - 1); if (zc < 3) mv.push(z + 1);
+      var m = pick(rng, mv); if (m === prev && mv.length > 1) { s--; continue; }
+      g[z] = g[m]; g[m] = 0; prev = z; z = m;
+    }
+    var md = manhattan(4, g), gap = md < P.lo ? P.lo - md : md > P.hi ? md - P.hi : 0;
+    if (gap < bestGap) { bestGap = gap; best = { tiles: g, md: md }; if (!gap) break; }
+  }
+  return { params: { size: 4, manhattan_range: [P.lo, P.hi] }, puzzle: { n: 4, tiles: best.tiles }, difficulty: best.md, difficulty_label: 'tiles are ' + best.md + ' steps from home in total', optimal: null };
+}
+
+/* ================= LIGHTS OUT ================= */
+/* Returns the fewest-press solution (array of 0/1) for a board, or null if unsolvable. */
+function lightsSolve(n, lit) {
+  var N = n * n, rows = [], i, j, r, c;
+  for (i = 0; i < N; i++) {
+    var row = new Uint8Array(N + 1); r = (i / n) | 0; c = i % n;
+    row[i] = 1; if (r > 0) row[i - n] = 1; if (r < n - 1) row[i + n] = 1; if (c > 0) row[i - 1] = 1; if (c < n - 1) row[i + 1] = 1;
+    row[N] = lit[i] ? 1 : 0; rows.push(row);
+  }
+  var pivCol = [], rank = 0;
+  for (var col = 0; col < N && rank < N; col++) {
+    var p = -1; for (i = rank; i < N; i++) if (rows[i][col]) { p = i; break; }
+    if (p < 0) continue;
+    var tmp = rows[p]; rows[p] = rows[rank]; rows[rank] = tmp;
+    for (i = 0; i < N; i++) if (i !== rank && rows[i][col]) { var a = rows[i], b = rows[rank]; for (j = col; j <= N; j++) a[j] ^= b[j]; }
+    pivCol.push(col); rank++;
+  }
+  for (i = rank; i < N; i++) if (rows[i][N]) return null;
+  var isPiv = new Uint8Array(N); pivCol.forEach(function (pc) { isPiv[pc] = 1; });
+  var free = []; for (j = 0; j < N; j++) if (!isPiv[j]) free.push(j);
+  var best = null, bestW = 1e9;
+  for (var mask = 0; mask < (1 << free.length); mask++) {
+    var x = new Uint8Array(N), w = 0;
+    for (j = 0; j < free.length; j++) if (mask >> j & 1) { x[free[j]] = 1; w++; }
+    for (i = 0; i < rank; i++) {
+      var v = rows[i][N];
+      for (j = 0; j < free.length; j++) if ((mask >> j & 1) && rows[i][free[j]]) v ^= 1;
+      x[pivCol[i]] = v; w += v;
+    }
+    if (w < bestW) { bestW = w; best = x; }
+  }
+  return Array.from(best);
+}
+var LO_LEVELS = [
+  { n: 3, lo: 2, hi: 3 }, { n: 3, lo: 4, hi: 5 }, { n: 4, lo: 3, hi: 4 }, { n: 4, lo: 5, hi: 7 },
+  { n: 5, lo: 5, hi: 7 }, { n: 5, lo: 8, hi: 10 }, { n: 5, lo: 11, hi: 15 },
+  { n: 6, lo: 10, hi: 14 }, { n: 6, lo: 15, hi: 20 }, { n: 7, lo: 18, hi: 26 }
+];
+function genLights(level, rng) {
+  var P = LO_LEVELS[level - 1], n = P.n, N = n * n, best = null, bestGap = 1e9;
+  for (var t = 0; t < 400; t++) {
+    var k = P.lo + ri(rng, P.hi - P.lo + 1), press = shuffle(rng, range(N)).slice(0, Math.min(N, k + (t > 30 ? ri(rng, 4) : 0)));
+    var lit = new Array(N).fill(0);
+    press.forEach(function (i) {
+      var r = (i / n) | 0, c = i % n;
+      lit[i] ^= 1; if (r > 0) lit[i - n] ^= 1; if (r < n - 1) lit[i + n] ^= 1; if (c > 0) lit[i - 1] ^= 1; if (c < n - 1) lit[i + 1] ^= 1;
+    });
+    var sol = lightsSolve(n, lit), w = sol.reduce(function (a, b) { return a + b; }, 0);
+    var gap = w < P.lo ? P.lo - w : w > P.hi ? w - P.hi : 0;
+    if (w > 0 && gap < bestGap) { bestGap = gap; best = { lit: lit, w: w }; if (!gap) break; }
+  }
+  return { params: { size: n, min_presses_range: [P.lo, P.hi] }, puzzle: { n: n, lit: best.lit }, difficulty: best.w, difficulty_label: 'fewest presses: ' + best.w, optimal: best.w };
+}
+
+/* ================= BALL SORT ================= */
+function bsDone(t, h) {
+  for (var i = 0; i < t.length; i++) {
+    var x = t[i]; if (!x.length) continue; if (x.length !== h) return false;
+    for (var k = 1; k < h; k++) if (x[k] !== x[0]) return false;
+  }
+  return true;
+}
+/* Depth-first solver. Returns a list of [from, to] moves, or null. */
+function bsSolve(tubesIn, h, cap) {
+  var t = tubesIn.map(function (x) { return x.slice(); }), seen = new Set(), nodes = 0, path = [];
+  function key() { return t.map(function (x) { return x.join(','); }).sort().join('|'); }
+  function rec() {
+    if (bsDone(t, h)) return true;
+    if (++nodes > cap) return false;
+    var k = key(); if (seen.has(k)) return false; seen.add(k);
+    var moves = [], i, j;
+    for (i = 0; i < t.length; i++) {
+      var src = t[i]; if (!src.length) continue;
+      var top = src[src.length - 1], uni = true;
+      for (j = 0; j < src.length; j++) if (src[j] !== top) { uni = false; break; }
+      if (uni && src.length === h) continue;
+      var usedEmpty = false;
+      for (j = 0; j < t.length; j++) {
+        if (j === i) continue; var dst = t[j];
+        if (dst.length === h) continue;
+        if (!dst.length) { if (uni || usedEmpty) continue; usedEmpty = true; moves.push([i, j, 1]); }
+        else if (dst[dst.length - 1] === top) {
+          var du = true; for (var q = 0; q < dst.length; q++) if (dst[q] !== top) { du = false; break; }
+          moves.push([i, j, du ? 3 + dst.length : 2]);
+        }
+      }
+    }
+    moves.sort(function (a, b) { return b[2] - a[2]; });
+    for (var m = 0; m < moves.length; m++) {
+      var mv = moves[m]; t[mv[1]].push(t[mv[0]].pop()); path.push([mv[0], mv[1]]);
+      if (rec()) return true;
+      t[mv[0]].push(t[mv[1]].pop()); path.pop();
+      if (nodes > cap) return false;
+    }
+    return false;
+  }
+  return rec() ? path : null;
+}
+var BS_LEVELS = [
+  { c: 3, h: 4 }, { c: 4, h: 4 }, { c: 5, h: 4 }, { c: 6, h: 4 }, { c: 7, h: 4 },
+  { c: 8, h: 4 }, { c: 9, h: 4 }, { c: 10, h: 4 }, { c: 10, h: 5 }, { c: 11, h: 5 }
+];
+function genBallsort(level, rng) {
+  var P = BS_LEVELS[level - 1], out = null;
+  for (var t = 0; t < 60 && !out; t++) {
+    var balls = []; for (var c = 0; c < P.c; c++) for (var k = 0; k < P.h; k++) balls.push(c);
+    shuffle(rng, balls);
+    var tubes = []; for (c = 0; c < P.c; c++) tubes.push(balls.slice(c * P.h, (c + 1) * P.h));
+    tubes.push([]); tubes.push([]);
+    var sortedAlready = tubes.some(function (x) { return x.length === P.h && x.every(function (v) { return v === x[0]; }); });
+    if (sortedAlready && P.c > 3) continue;
+    var sol = bsSolve(tubes, P.h, 60000);
+    if (sol && sol.length >= P.c * 2) out = { tubes: tubes, len: sol.length };
+  }
+  if (!out) { /* fallback: scramble from solved with legal single moves */
+    var tb = []; for (var cc = 0; cc < P.c; cc++) tb.push(new Array(P.h).fill(cc)); tb.push([]); tb.push([]);
+    for (var s = 0; s < 400; s++) { var a = ri(rng, tb.length), b = ri(rng, tb.length); if (a !== b && tb[a].length && tb[b].length < P.h) tb[b].push(tb[a].pop()); }
+    out = { tubes: tb, len: 0 };
+  }
+  return { params: { colours: P.c, tube_height: P.h, spare_tubes: 2 }, puzzle: { h: P.h, tubes: out.tubes }, difficulty: out.len, difficulty_label: 'a solver needed ' + out.len + ' moves', optimal: null };
+}
+
+/* ================= NONOGRAM ================= */
+function ngClues(line) {
+  var out = [], run = 0;
+  for (var i = 0; i < line.length; i++) { if (line[i] === 1) run++; else if (run) { out.push(run); run = 0; } }
+  if (run) out.push(run);
+  return out;
+}
+/* line: Int8Array of -1 unknown / 0 empty / 1 filled. Returns false on contradiction, else updates line. */
+function ngLine(clues, line) {
+  var n = line.length, k = clues.length, memo = new Int8Array((n + 2) * (k + 1)).fill(-1);
+  var canF = new Uint8Array(n), canE = new Uint8Array(n);
+  function rec(pos, bi) {
+    if (pos >= n) return bi === k;
+    var key = pos * (k + 1) + bi; if (memo[key] >= 0) return memo[key] === 1;
+    var res = false, i;
+    if (line[pos] !== 1 && rec(pos + 1, bi)) { canE[pos] = 1; res = true; }
+    if (bi < k) {
+      var L = clues[bi], end = pos + L, ok = end <= n;
+      if (ok) for (i = pos; i < end; i++) if (line[i] === 0) { ok = false; break; }
+      if (ok && end < n && line[end] === 1) ok = false;
+      if (ok && rec(end + 1, bi + 1)) { for (i = pos; i < end; i++) canF[i] = 1; if (end < n) canE[end] = 1; res = true; }
+    }
+    memo[key] = res ? 1 : 0; return res;
+  }
+  if (!rec(0, 0)) return false;
+  var changed = 0;
+  for (var j = 0; j < n; j++) if (line[j] < 0) {
+    if (canF[j] && !canE[j]) { line[j] = 1; changed++; } else if (canE[j] && !canF[j]) { line[j] = 0; changed++; }
+  }
+  return changed + 1;
+}
+function ngSolve(R, C, rowClues, colClues) {
+  var g = new Int8Array(R * C).fill(-1), sweeps = 0, line, r, c, res;
+  for (;;) {
+    var ch = false; sweeps++;
+    for (r = 0; r < R; r++) {
+      line = new Int8Array(C); for (c = 0; c < C; c++) line[c] = g[r * C + c];
+      res = ngLine(rowClues[r], line); if (res === false) return { solved: false, grid: g, sweeps: sweeps };
+      if (res > 1) { ch = true; for (c = 0; c < C; c++) g[r * C + c] = line[c]; }
+    }
+    for (c = 0; c < C; c++) {
+      line = new Int8Array(R); for (r = 0; r < R; r++) line[r] = g[r * C + c];
+      res = ngLine(colClues[c], line); if (res === false) return { solved: false, grid: g, sweeps: sweeps };
+      if (res > 1) { ch = true; for (r = 0; r < R; r++) g[r * C + c] = line[r]; }
+    }
+    if (!ch) break;
+  }
+  var solved = true; for (var i = 0; i < g.length; i++) if (g[i] < 0) { solved = false; break; }
+  return { solved: solved, grid: g, sweeps: sweeps - 1 };
+}
+var NG_LEVELS = [
+  { n: 5, lo: 1, hi: 3 }, { n: 6, lo: 2, hi: 4 }, { n: 7, lo: 2, hi: 5 }, { n: 8, lo: 3, hi: 6 }, { n: 10, lo: 3, hi: 5 },
+  { n: 10, lo: 6, hi: 99 }, { n: 12, lo: 4, hi: 7 }, { n: 12, lo: 8, hi: 99 }, { n: 15, lo: 5, hi: 8 }, { n: 15, lo: 9, hi: 99 }
+];
+function genNonogram(level, rng) {
+  var P = NG_LEVELS[level - 1], n = P.n, best = null, bestGap = 1e9;
+  for (var t = 0; t < 40; t++) {
+    var pic = new Int8Array(n * n), dens = 0.5 + rng() * 0.16, i;
+    for (i = 0; i < n * n; i++) pic[i] = rng() < dens ? 1 : 0;
+    var found = null;
+    for (var it = 0; it < n * n * 4; it++) {
+      var rc = [], cc = [], r, c, line;
+      for (r = 0; r < n; r++) { line = []; for (c = 0; c < n; c++) line.push(pic[r * n + c]); rc.push(ngClues(line)); }
+      for (c = 0; c < n; c++) { line = []; for (r = 0; r < n; r++) line.push(pic[r * n + c]); cc.push(ngClues(line)); }
+      var res = ngSolve(n, n, rc, cc);
+      if (res.solved) { found = { rc: rc, cc: cc, sweeps: res.sweeps }; break; }
+      var unk = []; for (i = 0; i < n * n; i++) if (res.grid[i] < 0) unk.push(i);
+      var x = pick(rng, unk); pic[x] = 1 - pic[x];
+    }
+    if (!found) continue;
+    var filled = 0; for (i = 0; i < n * n; i++) filled += pic[i];
+    if (filled < n * n * 0.3) continue;
+    var gap = found.sweeps < P.lo ? P.lo - found.sweeps : found.sweeps > P.hi ? found.sweeps - P.hi : 0;
+    if (gap < bestGap) { bestGap = gap; best = { pic: Array.from(pic), rc: found.rc, cc: found.cc, sweeps: found.sweeps }; if (!gap) break; }
+  }
+  return {
+    params: { size: n, solver_sweeps_range: [P.lo, P.hi] },
+    puzzle: { R: n, C: n, rowClues: best.rc, colClues: best.cc, solution: best.pic },
+    difficulty: best.sweeps, difficulty_label: 'line-solver passes: ' + best.sweeps, optimal: null
+  };
+}
+
+/* ================= TAKUZU (binary puzzle) ================= */
+var TKR = {};
+function tkRows(n) {
+  if (TKR[n]) return TKR[n];
+  var out = [], half = n / 2;
+  (function rec(pos, mask, ones, run, last) {
+    if (ones > half || pos - ones > half) return;
+    if (pos === n) { out.push(mask); return; }
+    for (var v = 0; v < 2; v++) { var nr = v === last ? run + 1 : 1; if (nr > 2) continue; rec(pos + 1, mask | (v << pos), ones + v, nr, v); }
+  })(0, 0, 0, 0, -1);
+  return (TKR[n] = out);
+}
+function tkFull(n, rng) {
+  var rowsAll = tkRows(n), half = n / 2, all = (1 << n) - 1;
+  for (var guard = 0; guard < 50; guard++) {
+    var chosen = [], ones = new Int8Array(n), budget = 20000;
+    var ok = (function rec(r) {
+      if (r === n) {
+        var cols = {};
+        for (var c = 0; c < n; c++) { var m = 0; for (var k = 0; k < n; k++) m |= ((chosen[k] >> c) & 1) << k; if (cols[m]) return false; cols[m] = 1; }
+        return true;
+      }
+      if (--budget < 0) return false;
+      var cand = shuffle(rng, rowsAll.slice());
+      for (var q = 0; q < cand.length; q++) {
+        var row = cand[q]; if (chosen.indexOf(row) >= 0) continue;
+        if (r >= 2) { var p1 = chosen[r - 1], p2 = chosen[r - 2]; if ((~(p1 ^ p2)) & (~(p1 ^ row)) & all) continue; }
+        var good = true, c;
+        for (c = 0; c < n; c++) { var bit = (row >> c) & 1, o = ones[c] + bit, z = (r + 1) - o; if (o > half || z > half) { good = false; break; } }
+        if (!good) continue;
+        for (c = 0; c < n; c++) ones[c] += (row >> c) & 1;
+        chosen.push(row);
+        if (rec(r + 1)) return true;
+        chosen.pop();
+        for (c = 0; c < n; c++) ones[c] -= (row >> c) & 1;
+        if (budget < 0) return false;
+      }
+      return false;
+    })(0);
+    if (ok) { var g = []; for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) g.push((chosen[r] >> c) & 1); return g; }
+  }
+  return null;
+}
+function tkLines(n) {
+  var L = [], r, c, a;
+  for (r = 0; r < n; r++) { a = []; for (c = 0; c < n; c++) a.push(r * n + c); L.push(a); }
+  for (c = 0; c < n; c++) { a = []; for (r = 0; r < n; r++) a.push(r * n + c); L.push(a); }
+  return L;
+}
+/* Rule violations in a (possibly partial) grid: returns list of cell indices involved. */
+function tkConflicts(n, g) {
+  var L = tkLines(n), half = n / 2, bad = {}, li, i;
+  for (li = 0; li < L.length; li++) {
+    var ln = L[li], c0 = 0, c1 = 0;
+    for (i = 0; i < n; i++) {
+      var v = g[ln[i]]; if (v === 0) c0++; else if (v === 1) c1++;
+      if (v >= 0 && i + 2 < n && g[ln[i + 1]] === v && g[ln[i + 2]] === v) { bad[ln[i]] = bad[ln[i + 1]] = bad[ln[i + 2]] = 1; }
+    }
+    if (c0 > half || c1 > half) for (i = 0; i < n; i++) if (g[ln[i]] === (c0 > half ? 0 : 1)) bad[ln[i]] = 1;
+  }
+  for (var o = 0; o < 2; o++) for (var a = 0; a < n; a++) for (var b = a + 1; b < n; b++) {
+    var la = L[o * n + a], lb = L[o * n + b], same = true;
+    for (i = 0; i < n; i++) if (g[la[i]] < 0 || g[la[i]] !== g[lb[i]]) { same = false; break; }
+    if (same) for (i = 0; i < n; i++) { bad[la[i]] = 1; bad[lb[i]] = 1; }
+  }
+  return Object.keys(bad).map(Number);
+}
+function tkLogic(n, grid, tier) {
+  var g = Int8Array.from(grid), L = tkLines(n), half = n / 2, used = 0;
+  function t1(gg) {
+    var ch = false;
+    for (var li = 0; li < L.length; li++) {
+      var ln = L[li], i, v, c0 = 0, c1 = 0;
+      for (i = 0; i < n; i++) {
+        v = gg[ln[i]]; if (v < 0) continue;
+        if (i + 1 < n && gg[ln[i + 1]] === v) {
+          if (i > 0 && gg[ln[i - 1]] < 0) { gg[ln[i - 1]] = 1 - v; ch = true; }
+          if (i + 2 < n && gg[ln[i + 2]] < 0) { gg[ln[i + 2]] = 1 - v; ch = true; }
+        }
+        if (i + 2 < n && gg[ln[i + 2]] === v && gg[ln[i + 1]] < 0) { gg[ln[i + 1]] = 1 - v; ch = true; }
+      }
+      for (i = 0; i < n; i++) { v = gg[ln[i]]; if (v === 0) c0++; else if (v === 1) c1++; }
+      if (c0 + c1 < n) {
+        if (c0 === half) { for (i = 0; i < n; i++) if (gg[ln[i]] < 0) { gg[ln[i]] = 1; ch = true; } }
+        else if (c1 === half) { for (i = 0; i < n; i++) if (gg[ln[i]] < 0) { gg[ln[i]] = 0; ch = true; } }
+      }
+    }
+    return ch;
+  }
+  function t2(gg) {
+    var ch = false;
+    for (var li = 0; li < L.length; li++) {
+      var ln = L[li], i, c0 = 0, c1 = 0, E = [];
+      for (i = 0; i < n; i++) { var v = gg[ln[i]]; if (v === 0) c0++; else if (v === 1) c1++; else E.push(i); }
+      if (E.length < 2) continue;
+      var s = -1; if (c0 === half - 1) s = 0; else if (c1 === half - 1) s = 1;
+      if (s < 0) continue;
+      var o = 1 - s, valid = [], base = li < n ? 0 : n;
+      for (var e = 0; e < E.length; e++) {
+        var arr = []; for (i = 0; i < n; i++) arr.push(gg[ln[i]]);
+        for (var f = 0; f < E.length; f++) arr[E[f]] = f === e ? s : o;
+        var okk = true;
+        for (i = 0; i + 2 < n; i++) if (arr[i] === arr[i + 1] && arr[i] === arr[i + 2]) { okk = false; break; }
+        if (okk) for (var q = 0; q < n && okk; q++) {
+          if (base + q === li) continue; var other = L[base + q], same = true;
+          for (i = 0; i < n; i++) if (gg[other[i]] !== arr[i]) { same = false; break; }
+          if (same) okk = false;
+        }
+        if (okk) valid.push(e);
+      }
+      if (valid.length === 1) { for (var f2 = 0; f2 < E.length; f2++) gg[ln[E[f2]]] = f2 === valid[0] ? s : o; ch = true; }
+      else if (valid.length > 1 && valid.length < E.length) { for (var f3 = 0; f3 < E.length; f3++) if (valid.indexOf(f3) < 0) { gg[ln[E[f3]]] = o; ch = true; } }
+    }
+    return ch;
+  }
+  function settle(gg) { for (;;) { if (t1(gg)) continue; if (t2(gg)) continue; break; } }
+  function t3() {
+    for (var i = 0; i < g.length; i++) if (g[i] < 0) for (var v = 0; v < 2; v++) {
+      var cp = Int8Array.from(g); cp[i] = v; settle(cp);
+      if (tkConflicts(n, cp).length) { g[i] = 1 - v; return true; }
+    }
+    return false;
+  }
+  for (;;) {
+    if (t1(g)) { if (used < 1) used = 1; continue; }
+    if (tier >= 2 && t2(g)) { if (used < 2) used = 2; continue; }
+    if (tier >= 3 && t3()) { used = 3; continue; }
+    break;
+  }
+  var solved = true; for (var i = 0; i < g.length; i++) if (g[i] < 0) { solved = false; break; }
+  return { solved: solved, used: used, grid: g };
+}
+var TK_LEVELS = [
+  { n: 4, tier: 1, keep: 0.42 }, { n: 6, tier: 1, keep: 0.4 }, { n: 6, tier: 2, keep: 0 }, { n: 8, tier: 1, keep: 0.36 }, { n: 8, tier: 2, keep: 0 },
+  { n: 10, tier: 1, keep: 0 }, { n: 10, tier: 2, keep: 0 }, { n: 12, tier: 2, keep: 0 }, { n: 12, tier: 3, keep: 0 }, { n: 14, tier: 3, keep: 0 }
+];
+var TK_TIER = ['', 'pairs and counting', 'last-symbol placement', 'one-step lookahead'];
+function genTakuzu(level, rng) {
+  var P = TK_LEVELS[level - 1], n = P.n, sol = tkFull(n, rng), puz = Int8Array.from(sol), N = n * n;
+  var order = shuffle(rng, range(N)), givens = N, minG = Math.round(N * P.keep), k, i, keep;
+  for (k = 0; k < N; k++) {
+    if (givens <= minG) break;
+    i = order[k]; keep = puz[i]; puz[i] = -1;
+    if (tkLogic(n, puz, Math.min(P.tier, 2)).solved) givens--; else puz[i] = keep;
+  }
+  if (P.tier >= 3) {
+    var extra = shuffle(rng, range(N)).filter(function (c) { return puz[c] >= 0; }).slice(0, n >= 14 ? 6 : 18);
+    for (k = 0; k < extra.length; k++) { i = extra[k]; keep = puz[i]; puz[i] = -1; if (tkLogic(n, puz, 3).solved) givens--; else puz[i] = keep; }
+  }
+  var used = tkLogic(n, puz, 3).used;
+  return {
+    params: { size: n, target_technique: TK_TIER[P.tier], givens: givens },
+    puzzle: { n: n, givens: Array.from(puz), solution: sol },
+    difficulty: used, difficulty_label: 'hardest step: ' + TK_TIER[used], optimal: null
+  };
+}
+
+/* ================= MASTERMIND ================= */
+var MM2_LEVELS = [
+  { colors: 4, pegs: 3, dups: false, guesses: 10 }, { colors: 5, pegs: 3, dups: false, guesses: 10 }, { colors: 6, pegs: 4, dups: false, guesses: 10 },
+  { colors: 6, pegs: 4, dups: true, guesses: 10 }, { colors: 6, pegs: 4, dups: true, guesses: 8 }, { colors: 7, pegs: 4, dups: true, guesses: 8 },
+  { colors: 8, pegs: 4, dups: true, guesses: 8 }, { colors: 8, pegs: 5, dups: true, guesses: 10 }, { colors: 8, pegs: 5, dups: true, guesses: 9 },
+  { colors: 9, pegs: 5, dups: true, guesses: 9 }
+];
+function mmScore(code, guess) {
+  var black = 0, cc = {}, gc = {}, i, white = 0;
+  for (i = 0; i < code.length; i++) {
+    if (code[i] === guess[i]) black++;
+    else { cc[code[i]] = (cc[code[i]] || 0) + 1; gc[guess[i]] = (gc[guess[i]] || 0) + 1; }
+  }
+  Object.keys(gc).forEach(function (k) { white += Math.min(gc[k], cc[k] || 0); });
+  return [black, white];
+}
+function genMastermind(level, rng) {
+  var P = MM2_LEVELS[level - 1], code = [];
+  if (P.dups) for (var i = 0; i < P.pegs; i++) code.push(ri(rng, P.colors));
+  else code = shuffle(rng, range(P.colors)).slice(0, P.pegs);
+  var space = P.dups ? Math.pow(P.colors, P.pegs) : range(P.pegs).reduce(function (a, k) { return a * (P.colors - k); }, 1);
+  return {
+    params: { colours: P.colors, pegs: P.pegs, repeats_allowed: P.dups, guess_limit: P.guesses },
+    puzzle: { colors: P.colors, pegs: P.pegs, dups: P.dups, guesses: P.guesses, code: code },
+    difficulty: space, difficulty_label: space + ' possible codes', optimal: null
+  };
+}
+
+/* ================= CROSS MATH ================= */
+/* Evaluates one equation line with the usual order of operations. Returns null if a division is not exact. */
+function cmEval(nums, ops) {
+  var total = 0, sign = 1, cur = nums[0];
+  for (var i = 0; i < ops.length; i++) {
+    var o = ops[i], v = nums[i + 1];
+    if (o === 'x') cur *= v;
+    else if (o === '/') { if (!v || cur % v !== 0) return null; cur /= v; }
+    else { total += sign * cur; sign = o === '+' ? 1 : -1; cur = v; }
+  }
+  return total + sign * cur;
+}
+function cmOrder(n) {
+  var order = [], chk = [], k, j;
+  for (k = 0; k < n; k++) {
+    for (j = k; j < n; j++) { order.push(k * n + j); chk.push(null); }
+    chk[chk.length - 1] = [[0, k]];
+    for (j = k + 1; j < n; j++) { order.push(j * n + k); chk.push(null); }
+    if (k < n - 1) chk[chk.length - 1] = [[1, k]]; else chk[chk.length - 1].push([1, k]);
+  }
+  return { order: order, chk: chk };
+}
+/* Counts solutions up to `limit`. Returns {count, over, nodes}; over means the node cap was hit. */
+function cmCount(p, givens, limit, cap) {
+  var n = p.n, N = n * n, o = cmOrder(n), order = o.order, chk = o.chk, val = new Array(N).fill(0), used = new Uint8Array(N + 1);
+  var count = 0, nodes = 0, over = false, i;
+  for (i = 0; i < N; i++) if (givens[i]) used[givens[i]] = 1;
+  function lineOk(c) {
+    var nums = [], k = c[1], j;
+    if (c[0] === 0) { for (j = 0; j < n; j++) nums.push(val[k * n + j]); return cmEval(nums, p.rowOps[k]) === p.rowRes[k]; }
+    for (j = 0; j < n; j++) nums.push(val[j * n + k]); return cmEval(nums, p.colOps[k]) === p.colRes[k];
+  }
+  function ok(pos) { var c = chk[pos]; if (!c) return true; for (var q = 0; q < c.length; q++) if (!lineOk(c[q])) return false; return true; }
+  function rec(pos) {
+    if (pos === N) { count++; return count >= limit; }
+    if (++nodes > cap) { over = true; return true; }
+    var cell = order[pos];
+    if (givens[cell]) { val[cell] = givens[cell]; var r = ok(pos) && rec(pos + 1); val[cell] = 0; return r; }
+    for (var v = 1; v <= N; v++) {
+      if (used[v]) continue;
+      used[v] = 1; val[cell] = v;
+      var stop = ok(pos) && rec(pos + 1);
+      used[v] = 0; val[cell] = 0;
+      if (stop) return true;
+    }
+    return false;
+  }
+  rec(0);
+  return { count: count, over: over, nodes: nodes };
+}
+var CM_LEVELS = [
+  { n: 3, ops: '+', giv: 5 }, { n: 3, ops: '+-', giv: 4 }, { n: 3, ops: '+-', giv: 3 }, { n: 3, ops: '+-x', giv: 3 }, { n: 3, ops: '+-x', giv: 2 },
+  { n: 3, ops: '+-x/', giv: 1 }, { n: 3, ops: '+-x/', giv: 0 }, { n: 4, ops: '+-', giv: 7 }, { n: 4, ops: '+-x', giv: 5 }, { n: 4, ops: '+-x/', giv: 4 }
+];
+function genCrossmath(level, rng) {
+  var P = CM_LEVELS[level - 1], n = P.n, N = n * n, opList = P.ops.split(''), best = null;
+  var opW = opList.map(function (o) { return { '+': 3, '-': 3, 'x': n === 3 ? 2 : 1.2, '/': 2.4 }[o]; });
+  var maxRes = n === 3 ? 600 : 999, minRes = level <= 5 ? 0 : -99, wantDiv = P.ops.indexOf('/') >= 0, wantMul = P.ops.indexOf('x') >= 0;
+  function pickLine(nums) {
+    for (var t = 0; t < 40; t++) {
+      var ops = []; for (var k = 0; k < n - 1; k++) ops.push(wpick(rng, opList, opW));
+      var r = cmEval(nums, ops);
+      if (r !== null && r >= minRes && r <= maxRes) return { ops: ops, res: r };
+    }
+    var plain = []; for (var q = 0; q < n - 1; q++) plain.push('+');
+    return { ops: plain, res: cmEval(nums, plain) };
+  }
+  for (var attempt = 0; attempt < 40; attempt++) {
+    var sol = shuffle(rng, range(N)).map(function (v) { return v + 1; });
+    var p = { n: n, rowOps: [], colOps: [], rowRes: [], colRes: [] }, k, j, all = '';
+    for (k = 0; k < n; k++) {
+      var rn = [], cn = []; for (j = 0; j < n; j++) { rn.push(sol[k * n + j]); cn.push(sol[j * n + k]); }
+      var a = pickLine(rn), b = pickLine(cn);
+      p.rowOps.push(a.ops); p.rowRes.push(a.res); p.colOps.push(b.ops); p.colRes.push(b.res); all += a.ops.join('') + b.ops.join('');
+    }
+    if (attempt < 30 && ((wantDiv && all.indexOf('/') < 0) || (wantMul && all.indexOf('x') < 0))) continue;
+    var giv = sol.slice(), count = N, order = shuffle(rng, range(N)), cap = n === 3 ? 200000 : 250000, nodes = 0;
+    for (k = 0; k < N && count > P.giv; k++) {
+      var cell = order[k], keep = giv[cell]; giv[cell] = 0;
+      var res = cmCount(p, giv, 2, cap);
+      if (res.count === 1 && !res.over) { count--; nodes = res.nodes; } else giv[cell] = keep;
+    }
+    var cand = { p: p, sol: sol, giv: giv, count: count, nodes: nodes };
+    if (!best || count < best.count) best = cand;
+    if (count <= P.giv) break;
+  }
+  best.p.givens = best.giv; best.p.solution = best.sol;
+  return {
+    params: { size: n, numbers: '1-' + N, operators: P.ops, target_givens: P.giv, givens: best.count },
+    puzzle: best.p, difficulty: best.nodes,
+    difficulty_label: best.count + ' of ' + N + ' numbers given, solver search nodes: ' + best.nodes, optimal: null
+  };
+}
+
+/* ================= registry ================= */
+var TYPES = {
+  sudoku: { track: 'math', name: 'Sudoku', gen: genSudoku },
+  kenken: { track: 'math', name: 'KenKen', gen: genKenken },
+  crossmath: { track: 'math', name: 'Cross Math', gen: genCrossmath },
+  mathmaze: { track: 'math', name: 'Math Maze', gen: genMaze },
+  sliding: { track: 'analytical', name: 'Sliding Tiles', gen: genSliding },
+  lights: { track: 'analytical', name: 'Lights Out', gen: genLights },
+  ballsort: { track: 'analytical', name: 'Colour Sort', gen: genBallsort },
+  nonogram: { track: 'logic', name: 'Nonogram', gen: genNonogram },
+  takuzu: { track: 'logic', name: 'Binary Grid', gen: genTakuzu },
+  mastermind: { track: 'logic', name: 'Code Breaker', gen: genMastermind }
+};
+function generate(type, level, seed) {
+  var out = TYPES[type].gen(level, makeRng(seed));
+  out.type = type; out.level = level; out.seed = seed; out.generator_version = type + '@' + GEN_VERSION;
+  return out;
+}
+
+var PT = {
+  GEN_VERSION: GEN_VERSION, TYPES: TYPES, generate: generate, makeRng: makeRng,
+  sudGeom: sudGeom, sudLogic: sudLogic, sudCount: sudCount, sudHint: sudHint,
+  kkSolve: kkSolve, mmApply: mmApply, mmEnumerate: mmEnumerate,
+  slide3Dist: slide3Dist, manhattan: manhattan, lightsSolve: lightsSolve,
+  bsSolve: bsSolve, bsDone: bsDone, ngSolve: ngSolve, ngClues: ngClues,
+  tkConflicts: tkConflicts, tkLogic: tkLogic, mmScore: mmScore,
+  cmEval: cmEval, cmCount: cmCount
+};
+root.PT = PT;
+if (typeof module !== 'undefined' && module.exports) module.exports = PT;
+if (typeof WorkerGlobalScope !== 'undefined' && root instanceof WorkerGlobalScope) {
+  root.onmessage = function (e) {
+    var m = e.data;
+    try { root.postMessage({ id: m.id, ok: true, result: generate(m.type, m.level, m.seed) }); }
+    catch (err) { root.postMessage({ id: m.id, ok: false, error: String(err && err.message || err) }); }
+  };
+}
+})(typeof self !== 'undefined' ? self : typeof globalThis !== 'undefined' ? globalThis : this);
+</script>
+<script>
+(function () {
+'use strict';
+var PT = window.PT, APP_VERSION = '1.1.0', MAX_LEVEL = 10, NEED = 2;
+
+/* ================= helpers ================= */
+function $(s, r) { return (r || document).querySelector(s); }
+function h(tag, attrs, kids) {
+  var e = document.createElement(tag), k;
+  if (attrs) for (k in attrs) {
+    var v = attrs[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'text') e.textContent = v;
+    else if (k === 'html') e.innerHTML = v;
+    else if (k === 'style') e.style.cssText = v;
+    else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  if (kids != null) (Array.isArray(kids) ? kids : [kids]).forEach(function (c) {
+    if (c == null || c === false) return;
+    e.appendChild(typeof c === 'string' || typeof c === 'number' ? document.createTextNode(String(c)) : c);
+  });
+  return e;
+}
+function range(n) { var a = []; for (var i = 0; i < n; i++) a.push(i); return a; }
+function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+function fmtTime(ms) {
+  if (ms == null) return '-';
+  var s = Math.floor(ms / 1000), m = Math.floor(s / 60), hh = Math.floor(m / 60);
+  s %= 60;
+  if (hh) return hh + ':' + pad2(m % 60) + ':' + pad2(s);
+  return m + ':' + pad2(s);
+}
+function median(xs) {
+  if (!xs.length) return null;
+  var a = xs.slice().sort(function (x, y) { return x - y; }), m = a.length >> 1;
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+}
+function pct(a, b) { return b ? Math.round(100 * a / b) + '%' : '-'; }
+function nowIso() { return new Date().toISOString(); }
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function lsGet(k) { try { var v = window.localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+function lsSet(k, v) { try { window.localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+var OPS = { '+': '+', '-': '−', 'x': '×', '/': '÷' };
+
+/* ================= catalogue ================= */
+var TRACKS = [
+  { id: 'math', lane: 1, name: 'Maths', blurb: 'Number placement and arithmetic: sums, cages and running totals.' },
+  { id: 'analytical', lane: 2, name: 'Analytical', blurb: 'Visual and hands-on. You move pieces and watch the board respond.' },
+  { id: 'logic', lane: 3, name: 'Logic', blurb: 'Pure deduction. Every step follows from the clues.' }
+];
+var TRACK = {}; TRACKS.forEach(function (t) { TRACK[t.id] = t; });
+function sv(inner) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + inner + '</svg>'; }
+var G = 'fill="none" stroke="var(--t-deep)" stroke-width="1.4"', F = 'fill="var(--t)"';
+var PUZ = {
+  sudoku: {
+    name: 'Sudoku', desc: 'Place each digit once in every row, column and box.',
+    icon: sv('<rect x="3" y="3" width="18" height="18" rx="2" ' + G + '/><path d="M9 3v18M15 3v18M3 9h18M3 15h18" ' + G + '/><rect x="9.8" y="9.8" width="4.4" height="4.4" ' + F + '/>'),
+    rules: ['Every row, column and outlined box must hold each digit exactly once.', 'Select a cell, then pick a digit. Notes mode pencils in small candidates.', 'A wavy underline marks two equal digits that clash.', 'Hint places one digit and tells you why. Check marks wrong entries and counts them as mistakes.']
+  },
+  kenken: {
+    name: 'KenKen', desc: 'Fill a Latin square so every cage hits its target.',
+    icon: sv('<rect x="3" y="3" width="18" height="18" rx="2" ' + G + '/><path d="M3 12h9v9M12 3v9h9" fill="none" stroke="var(--t)" stroke-width="2.4"/>'),
+    rules: ['Use the digits 1 to N. No digit repeats in a row or column.', 'Each outlined cage shows a target and an operation. The digits in the cage must produce that target.', 'Subtraction and division cages have two cells and work in either order.', 'A cage with only a number is a given.']
+  },
+  crossmath: {
+    name: 'Cross Math', desc: 'Place each number once so every row and column equation holds.',
+    icon: sv('<rect x="3" y="3" width="6" height="6" rx="1.5" ' + F + '/><rect x="15" y="3" width="6" height="6" rx="1.5" ' + G + '/><rect x="3" y="15" width="6" height="6" rx="1.5" ' + G + '/><rect x="15" y="15" width="6" height="6" rx="1.5" fill="var(--t-deep)"/><path d="M10.4 6h3.2M12 4.4v3.2M10.4 17.2h3.2M10.4 18.9h3.2M4.9 10.9l2.2 2.2M7.1 10.9l-2.2 2.2" fill="none" stroke="var(--t-deep)" stroke-width="1.3" stroke-linecap="round"/>'),
+    rules: ['Fill the empty cells with the numbers 1 to 9, or 1 to 16 on the larger grid. Each number is used exactly once.', 'Every row reads left to right and every column top to bottom as a sum that must equal the result at its end.', 'Multiplication and division are done before addition and subtraction, as in ordinary arithmetic.', 'A result shows a tick when its line is right and is crossed out when the line is full but wrong.', 'Every puzzle has exactly one solution. A wavy underline marks a number you have used twice.']
+  },
+  mathmaze: {
+    name: 'Math Maze', desc: 'Walk from Start to Finish and land on the exact target.',
+    icon: sv('<path d="M5 5h7v7h7v7" fill="none" stroke="var(--t)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="5" cy="5" r="2.4" ' + F + '/><circle cx="19" cy="19" r="2.4" fill="var(--t-deep)"/>'),
+    rules: ['You start on the top-left number. Step up, down, left or right, never onto a cell twice.', 'Each cell you enter changes your running total.', 'A division cell is blocked unless your total divides evenly.', 'Reach the Finish cell with exactly the target. Select a cell on your route to step back to it.']
+  },
+  sliding: {
+    name: 'Sliding Tiles', desc: 'Slide tiles into the gap until they read in order.',
+    icon: sv('<rect x="3" y="3" width="8" height="8" rx="2" ' + F + '/><rect x="13" y="3" width="8" height="8" rx="2" ' + F + '/><rect x="3" y="13" width="8" height="8" rx="2" ' + F + '/><rect x="13" y="13" width="8" height="8" rx="2" ' + G + ' stroke-dasharray="2 2"/>'),
+    rules: ['Select a tile in line with the gap to slide it. Arrow keys work too.', 'Finish with the tiles in order, left to right and top to bottom, gap last.', 'Fewer moves earn nothing extra, but the shortest solution is shown for comparison.']
+  },
+  lights: {
+    name: 'Lights Out', desc: 'Each press flips a light and its neighbours. Turn them all off.',
+    icon: sv('<circle cx="6" cy="6" r="2.6" ' + F + '/><circle cx="12" cy="6" r="2.6" ' + G + '/><circle cx="18" cy="6" r="2.6" ' + F + '/><circle cx="6" cy="12" r="2.6" ' + G + '/><circle cx="12" cy="12" r="2.6" ' + F + '/><circle cx="18" cy="12" r="2.6" ' + G + '/><circle cx="6" cy="18" r="2.6" ' + F + '/><circle cx="12" cy="18" r="2.6" ' + G + '/><circle cx="18" cy="18" r="2.6" ' + G + '/>'),
+    rules: ['Pressing a light flips it and the lights directly above, below, left and right.', 'The puzzle is solved when every light is off.', 'Pressing the same light twice cancels out, and the order of presses does not matter.']
+  },
+  ballsort: {
+    name: 'Colour Sort', desc: 'Move one ball at a time until every tube holds one colour.',
+    icon: sv('<path d="M5 3v14a3 3 0 0 0 6 0V3M13 3v14a3 3 0 0 0 6 0V3" ' + G + '/><circle cx="8" cy="16" r="2.3" ' + F + '/><circle cx="8" cy="11" r="2.3" fill="var(--t-deep)"/><circle cx="16" cy="16" r="2.3" fill="var(--t-deep)"/>'),
+    rules: ['Select a tube to pick up its top ball, then select where it goes.', 'A ball can land in an empty tube or on a ball of the same colour.', 'Each ball carries a number as well as a colour.', 'Finish with every tube full of one colour, or empty.']
+  },
+  nonogram: {
+    name: 'Nonogram', desc: 'Use run-length clues to paint the hidden picture.',
+    icon: sv('<rect x="3" y="3" width="6" height="6" ' + F + '/><rect x="9" y="3" width="6" height="6" ' + F + '/><rect x="15" y="9" width="6" height="6" ' + F + '/><rect x="3" y="15" width="6" height="6" ' + F + '/><rect x="9" y="15" width="6" height="6" ' + F + '/><rect x="3" y="3" width="18" height="18" ' + G + '/>'),
+    rules: ['The numbers beside each row and above each column give the lengths of its filled runs, in order.', 'Runs in one line are separated by at least one empty cell.', 'Choose Fill or Cross, then tap or drag across cells. Crosses are your own markers for empty cells.', 'Every puzzle here can be solved line by line without guessing.']
+  },
+  takuzu: {
+    name: 'Binary Grid', desc: 'Fill with 0 and 1: no three alike in a line, equal counts.',
+    icon: sv('<rect x="3" y="3" width="18" height="18" rx="2" ' + G + '/><text x="7.2" y="16.5" font-size="11" font-weight="700" font-family="monospace" ' + F + '>0</text><text x="13.2" y="16.5" font-size="11" font-weight="700" font-family="monospace" fill="var(--t-deep)">1</text>'),
+    rules: ['Tap a cell to cycle through 0, 1 and empty.', 'No more than two equal digits may sit next to each other in a row or column.', 'Every row and column holds as many 0s as 1s.', 'No two rows are identical, and no two columns are identical.']
+  },
+  mastermind: {
+    name: 'Code Breaker', desc: 'Deduce the hidden colour code from the feedback on each guess.',
+    icon: sv('<circle cx="6" cy="12" r="3" ' + F + '/><circle cx="12" cy="12" r="3" fill="var(--t-deep)"/><circle cx="18" cy="12" r="3" ' + G + '/><path d="M4 19h16" stroke="var(--t-deep)" stroke-width="1.6" stroke-dasharray="1.5 2.5"/>'),
+    rules: ['Build a guess from the colours, then submit it.', 'Exact means right colour in the right position. Misplaced means right colour in the wrong position.', 'You have a limited number of guesses. Running out logs the attempt as failed.', 'Each colour carries a number so it never depends on colour alone.']
+  }
+};
+var TYPE_ORDER = { math: ['sudoku', 'kenken', 'crossmath', 'mathmaze'], analytical: ['sliding', 'lights', 'ballsort'], logic: ['nonogram', 'takuzu', 'mastermind'] };
+var BASE_PAR = [60, 90, 150, 210, 270, 360, 450, 540, 660, 780];
+
+/* ================= state ================= */
+var S = { attempts: [], progress: { level: 1, unlocked: {} }, level: 1, playLevel: 1, ready: false, cur: null, screen: 'hub', openRow: null };
+
+/* ================= storage ================= */
+var Store = {
+  mode: 'local', col: null, prog: null, uid: null, chains: {},
+  init: function () {
+    var self = this;
+    if (!(window.claude && typeof window.claude.use === 'function')) return Promise.resolve();
+    return Promise.all([window.claude.use('db'), window.claude.use('user')]).then(function (r) {
+      var db = r[0], user = r[1];
+      if (!db || !user) return;
+      return user.id().then(function (uid) {
+        if (!uid) return;
+        self.uid = uid; self.mode = 'db';
+        self.col = db.doc('data/users/' + uid + '/game').collection('attempts');
+        self.prog = db.doc('data/users/' + uid + '/progress');
+      });
+    }).catch(function () { self.mode = 'local'; });
+  },
+  load: function () {
+    var self = this;
+    if (this.mode !== 'db') return Promise.resolve({ attempts: lsGet('pt_attempts') || [], progress: lsGet('pt_progress') });
+    return Promise.all([this.col.orderBy('started_at', 'desc').limit(1000).get(), this.prog.get()]).then(function (r) {
+      var rows = r[0].docs.map(function (d) { return clone(d.data()); });
+      var pg = r[1].exists ? clone(r[1].data()) : null;
+      var outbox = lsGet('pt_outbox') || [];
+      if (outbox.length) {
+        var have = {}; rows.forEach(function (a) { have[a.attempt_id] = 1; });
+        outbox.forEach(function (a) { if (!have[a.attempt_id]) rows.push(a); self.save(a); });
+        rows.sort(function (a, b) { return a.started_at < b.started_at ? 1 : -1; });
+        lsSet('pt_outbox', []);
+      }
+      return { attempts: rows, progress: pg };
+    }).catch(function () {
+      self.mode = 'local'; self.broken = true;
+      return { attempts: lsGet('pt_attempts') || [], progress: lsGet('pt_progress') };
+    });
+  },
+  save: function (att) {
+    var self = this, id = att.attempt_id, body = clone(att);
+    if (this.mode !== 'db') { this.saveLocal(); return Promise.resolve(); }
+    setSave('Saving…', '');
+    var run = function () {
+      return self.col.doc(id).set(body).catch(function (e) {
+        if (e && e.code === 'unavailable') return new Promise(function (res) { setTimeout(res, 1200 + Math.random() * 800); }).then(function () { return self.col.doc(id).set(body); });
+        throw e;
+      });
+    };
+    var next = (this.chains[id] || Promise.resolve()).then(run).then(function () { setSave('Saved to your attempt database', 'ok'); }, function (e) {
+      var out = lsGet('pt_outbox') || [];
+      out = out.filter(function (a) { return a.attempt_id !== id; }); out.push(body); lsSet('pt_outbox', out);
+      setSave(e && e.code === 'quota_exceeded' ? 'The database is full. This attempt is kept in this browser.' : 'Could not reach the database. This attempt is kept in this browser and will sync next time.', 'warn');
+    });
+    this.chains[id] = next; return next;
+  },
+  saveProgress: function (p) {
+    if (this.mode !== 'db') { lsSet('pt_progress', p); return; }
+    var self = this;
+    this.chains._p = (this.chains._p || Promise.resolve()).then(function () { return self.prog.set(clone(p)); }).catch(function () {});
+  },
+  saveLocal: function () {
+    var ok = lsSet('pt_attempts', S.attempts);
+    setSave(ok ? 'Saved in this browser' : 'This browser is blocking storage. Attempts last only until you close the page.', ok ? 'ok' : 'warn');
+  }
+};
+function setSave(text, state) { var e = $('#save-status'); e.textContent = text; e.setAttribute('data-state', state || ''); }
+
+/* ================= progression ================= */
+function gateFor(level) {
+  var g = { math: { n: 0, clean: false }, analytical: { n: 0, clean: false }, logic: { n: 0, clean: false } };
+  S.attempts.forEach(function (a) {
+    if (a.level !== level || !a.counts_for_gate || !g[a.track]) return;
+    g[a.track].n++; if (!a.hints_used) g[a.track].clean = true;
+  });
+  return g;
+}
+function laneDone(x) { return x.n >= NEED && x.clean; }
+function computeLevel() {
+  var L = 1;
+  while (L < MAX_LEVEL) { var g = gateFor(L); if (laneDone(g.math) && laneDone(g.analytical) && laneDone(g.logic)) L++; else break; }
+  return Math.max(L, (S.progress && S.progress.level) || 1);
+}
+function parMs(type, level, excludeId) {
+  var xs = S.attempts.filter(function (a) { return a.puzzle_type === type && a.level === level && a.outcome === 'solved' && a.attempt_id !== excludeId; }).map(function (a) { return a.active_ms; });
+  return xs.length >= 3 ? median(xs) : BASE_PAR[level - 1] * 1000;
+}
+
+/* ================= timer ================= */
+function Timer() { this.acc = 0; this.t0 = null; this.pauses = 0; this.pausedAcc = 0; this.pt0 = null; }
+Timer.prototype.start = function () {
+  if (this.t0 !== null) return;
+  var now = performance.now();
+  if (this.pt0 !== null) { this.pausedAcc += now - this.pt0; this.pt0 = null; }
+  this.t0 = now;
+};
+Timer.prototype.pause = function (count) {
+  if (this.t0 === null) return;
+  var now = performance.now();
+  this.acc += now - this.t0; this.t0 = null;
+  if (count !== false) { this.pauses++; this.pt0 = now; }
+};
+Timer.prototype.ms = function () { return this.acc + (this.t0 !== null ? performance.now() - this.t0 : 0); };
+Timer.prototype.pausedMs = function () { return this.pausedAcc + (this.pt0 !== null ? performance.now() - this.pt0 : 0); };
+Timer.prototype.running = function () { return this.t0 !== null; };
+
+/* ================= generation (worker with fallback) ================= */
+var worker = null, workerDead = false, reqId = 0, waiting = {};
+function generateAsync(type, level, seed) {
+  return new Promise(function (resolve) {
+    var done = false;
+    function local() { if (done) return; done = true; setTimeout(function () { resolve(PT.generate(type, level, seed)); }, 20); }
+    if (!workerDead && !worker) {
+      try {
+        var src = document.getElementById('engines').textContent;
+        worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+        worker.onmessage = function (e) { var w = waiting[e.data.id]; if (w) { delete waiting[e.data.id]; w(e.data); } };
+        worker.onerror = function () { workerDead = true; Object.keys(waiting).forEach(function (k) { var w = waiting[k]; delete waiting[k]; w({ ok: false }); }); };
+      } catch (e) { workerDead = true; }
+    }
+    if (workerDead) return local();
+    var id = ++reqId;
+    waiting[id] = function (m) { if (m.ok) { if (!done) { done = true; resolve(m.result); } } else local(); };
+    worker.postMessage({ id: id, type: type, level: level, seed: seed });
+    setTimeout(function () { if (waiting[id]) { delete waiting[id]; local(); } }, 6000);
+  });
+}
+
+/* ================= puzzle views ================= */
+function rcName(n, i) { return 'row ' + (Math.floor(i / n) + 1) + ', column ' + (i % n + 1); }
+function rc(n, i) { return 'r' + (Math.floor(i / n) + 1) + 'c' + (i % n + 1); }
+function flash(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
+function numGridView(ctx, cfg) {
+  var n = cfg.n, N = n * n, sol = cfg.solution, giv = cfg.givens, vals = giv.slice(), notes = new Array(N).fill(0);
+  var sel = -1, notesMode = false, wrong = {}, hist = [], cells = [], padBtns = [], units = cfg.units;
+  var cellUnits = range(N).map(function () { return []; });
+  units.forEach(function (u, ui) { u.forEach(function (i) { cellUnits[i].push(ui); }); });
+  function clash() {
+    var bad = {};
+    units.forEach(function (u) { var seen = {}; u.forEach(function (i) { var v = vals[i]; if (!v) return; if (seen[v] !== undefined) { bad[i] = 1; bad[seen[v]] = 1; } else seen[v] = i; }); });
+    return bad;
+  }
+  function paint() {
+    var bad = clash(), svv = sel >= 0 ? vals[sel] : 0, counts = new Array(n + 1).fill(0);
+    cells.forEach(function (c, i) {
+      var v = vals[i], cl = c.el.classList, peer = false, k;
+      if (v) counts[v]++;
+      c.v.textContent = v || '';
+      if (sel >= 0 && i !== sel) for (k = 0; k < cellUnits[i].length; k++) if (cellUnits[sel].indexOf(cellUnits[i][k]) >= 0) { peer = true; break; }
+      cl.toggle('sel', i === sel); cl.toggle('peer', peer); cl.toggle('same', !!v && v === svv && i !== sel);
+      cl.toggle('clash', !!bad[i]); cl.toggle('wrong', !!wrong[i]);
+      c.nt.hidden = !!v;
+      for (k = 0; k < n; k++) c.ns[k].textContent = (!v && (notes[i] >> k & 1)) ? (k + 1) : '';
+    });
+    padBtns.forEach(function (b, d) { b.classList.toggle('done', counts[d + 1] >= n); });
+  }
+  function checkDone() {
+    for (var i = 0; i < N; i++) if (!vals[i]) return;
+    for (i = 0; i < N; i++) if (vals[i] !== sol[i]) { ctx.msg('The grid is full but not right yet. Check shows where.', 'bad'); return; }
+    ctx.solved();
+  }
+  function input(d) {
+    if (sel < 0) { ctx.msg('Select a cell first.'); return; }
+    var i = sel; if (giv[i]) return;
+    if (notesMode && d > 0) {
+      if (vals[i]) return;
+      hist.push({ i: i, v: vals[i], n: notes[i], pn: [] }); notes[i] ^= 1 << (d - 1); ctx.log('n', rc(n, i) + '~' + d); paint(); return;
+    }
+    if (vals[i] === d) return;
+    var rec = { i: i, v: vals[i], n: notes[i], pn: [] };
+    vals[i] = d; delete wrong[i];
+    if (d) {
+      notes[i] = 0;
+      cellUnits[i].forEach(function (ui) { units[ui].forEach(function (j) { if (notes[j] >> (d - 1) & 1) { rec.pn.push([j, notes[j]]); notes[j] &= ~(1 << (d - 1)); } }); });
+    }
+    hist.push(rec); ctx.move(rc(n, i) + '=' + d); ctx.msg(''); paint(); if (d) checkDone();
+  }
+  function select(i) { sel = i; paint(); }
+  return {
+    tools: { undo: true, notes: true, hint: true, check: true, restart: true },
+    mount: function () {
+      var nc = Math.ceil(Math.sqrt(n)), grid = h('div', { class: 'numgrid ' + cfg.cls, style: '--n:' + n + ';--nc:' + nc });
+      range(N).forEach(function (i) {
+        var r = Math.floor(i / n), c = i % n, cls = 'cell';
+        if (giv[i]) cls += ' given'; if (cfg.edgeR(i)) cls += ' er'; if (cfg.edgeB(i)) cls += ' eb';
+        if (c === n - 1) cls += ' lastc'; if (r === n - 1) cls += ' lastr';
+        var v = h('span', { class: 'v' }), ns = range(n).map(function () { return h('i'); }), nt = h('span', { class: 'notes' }, ns);
+        var lab = cfg.label ? cfg.label(i) : '';
+        var b = h('button', { class: cls, 'aria-label': 'Row ' + (r + 1) + ', column ' + (c + 1) + (lab ? ', cage ' + lab : ''), onclick: function () { select(i); } }, [lab ? h('span', { class: 'cage', text: lab }) : null, v, nt]);
+        cells.push({ el: b, v: v, nt: nt, ns: ns }); grid.appendChild(b);
+      });
+      ctx.board.appendChild(grid);
+      range(n).forEach(function (d) { var b = h('button', { class: 'btn', text: String(d + 1), 'aria-label': 'Digit ' + (d + 1), onclick: function () { input(d + 1); } }); padBtns.push(b); ctx.pad.appendChild(b); });
+      ctx.pad.appendChild(h('button', { class: 'btn wide', text: 'Erase', onclick: function () { input(0); } }));
+      paint();
+    },
+    undo: function () {
+      var r = hist.pop(); if (!r) return false;
+      vals[r.i] = r.v; notes[r.i] = r.n; r.pn.forEach(function (p) { notes[p[0]] = p[1]; });
+      delete wrong[r.i]; sel = r.i; paint(); return true;
+    },
+    hint: function () {
+      var i, t = null;
+      for (i = 0; i < N; i++) if (!giv[i] && vals[i] && vals[i] !== sol[i]) {
+        hist.push({ i: i, v: vals[i], n: notes[i], pn: [] });
+        var was = vals[i]; vals[i] = 0; delete wrong[i]; sel = i; ctx.hintUsed('clear ' + rc(n, i)); paint(); flash(cells[i].el, 'flash');
+        ctx.msg('The ' + was + ' in ' + rcName(n, i) + ' was wrong, so it has been cleared.'); return;
+      }
+      if (cfg.logicHint) t = cfg.logicHint(vals);
+      if (!t) {
+        i = (sel >= 0 && !vals[sel]) ? sel : vals.indexOf(0);
+        if (i < 0) return;
+        t = { cell: i, digit: sol[i], why: 'revealed from the solution' };
+      }
+      hist.push({ i: t.cell, v: 0, n: notes[t.cell], pn: [] });
+      vals[t.cell] = t.digit; notes[t.cell] = 0; sel = t.cell; ctx.hintUsed(rc(n, t.cell) + '=' + t.digit); paint(); flash(cells[t.cell].el, 'flash');
+      ctx.msg('Placed ' + t.digit + ' in ' + rcName(n, t.cell) + ': ' + t.why + '.'); checkDone();
+    },
+    check: function () {
+      var cnt = 0; wrong = {};
+      for (var i = 0; i < N; i++) if (!giv[i] && vals[i] && vals[i] !== sol[i]) { wrong[i] = 1; cnt++; }
+      ctx.checked(cnt); paint();
+      ctx.msg(cnt ? cnt + (cnt === 1 ? ' wrong entry is marked.' : ' wrong entries are marked.') : 'No mistakes so far.', cnt ? 'bad' : 'good');
+    },
+    restart: function () { vals = giv.slice(); notes = new Array(N).fill(0); hist = []; wrong = {}; sel = -1; paint(); },
+    toggleNotes: function () { notesMode = !notesMode; return notesMode; },
+    key: function (e) {
+      var k = e.key;
+      if (/^[1-9]$/.test(k) && +k <= n) { input(+k); return true; }
+      if (k === 'Backspace' || k === 'Delete' || k === '0') { input(0); return true; }
+      if (k.indexOf('Arrow') === 0) {
+        if (sel < 0) sel = 0;
+        else if (k === 'ArrowUp' && sel >= n) sel -= n; else if (k === 'ArrowDown' && sel < N - n) sel += n;
+        else if (k === 'ArrowLeft' && sel % n > 0) sel--; else if (k === 'ArrowRight' && sel % n < n - 1) sel++;
+        paint(); return true;
+      }
+      return false;
+    },
+    state: function () { return { values: vals }; },
+    solve: function () { vals = sol.slice(); paint(); checkDone(); }
+  };
+}
+function sudokuView(ctx) {
+  var p = ctx.puzzle, n = p.N, g = PT.sudGeom(n);
+  ctx.goal('Fill every row, column and box with <b>1–' + n + '</b>.');
+  return numGridView(ctx, {
+    n: n, cls: 'sudoku', solution: p.solution, givens: p.givens, units: g.units,
+    edgeR: function (i) { var c = i % n; return (c + 1) % p.bc === 0 && c < n - 1; },
+    edgeB: function (i) { var r = Math.floor(i / n); return (r + 1) % p.br === 0 && r < n - 1; },
+    logicHint: function (vals) { return PT.sudHint(n, vals); }
+  });
+}
+function kenkenView(ctx) {
+  var p = ctx.puzzle, n = p.n, cageOf = new Array(n * n), labels = {}, giv = new Array(n * n).fill(0), units = [];
+  p.cages.forEach(function (c, k) {
+    c.cells.forEach(function (x) { cageOf[x] = k; });
+    labels[Math.min.apply(null, c.cells)] = c.target + (c.op === '=' ? '' : OPS[c.op]);
+    if (c.op === '=') giv[c.cells[0]] = c.target;
+  });
+  range(n).forEach(function (r) { units.push(range(n).map(function (c) { return r * n + c; })); });
+  range(n).forEach(function (c) { units.push(range(n).map(function (r) { return r * n + c; })); });
+  ctx.goal('Digits <b>1–' + n + '</b>, no repeats in a row or column. Every cage must make its target.');
+  return numGridView(ctx, {
+    n: n, cls: 'kk', solution: p.solution, givens: giv, units: units,
+    edgeR: function (i) { return i % n < n - 1 && cageOf[i] !== cageOf[i + 1]; },
+    edgeB: function (i) { return i < n * n - n && cageOf[i] !== cageOf[i + n]; },
+    label: function (i) { return labels[i] || ''; }
+  });
+}
+
+function takuzuView(ctx) {
+  var p = ctx.puzzle, n = p.n, N = n * n, sol = p.solution, giv = p.givens, vals = giv.slice(), hist = [], wrong = {}, sel = -1, cells = [];
+  ctx.goal('Fill the grid with <b>0</b> and <b>1</b>. Each row and column needs <b>' + (n / 2) + '</b> of each.');
+  function paint() {
+    var bad = {}; PT.tkConflicts(n, vals).forEach(function (i) { bad[i] = 1; });
+    cells.forEach(function (el, i) {
+      var v = vals[i], cl = el.classList;
+      el.firstChild.textContent = v < 0 ? '' : String(v);
+      cl.toggle('zero', v === 0); cl.toggle('one', v === 1); cl.toggle('clash', !!bad[i] && giv[i] < 0); cl.toggle('wrong', !!wrong[i]); cl.toggle('sel', i === sel);
+    });
+  }
+  function checkDone() {
+    for (var i = 0; i < N; i++) if (vals[i] < 0) return;
+    for (i = 0; i < N; i++) if (vals[i] !== sol[i]) { ctx.msg('The grid is full but breaks a rule. Check shows where.', 'bad'); return; }
+    ctx.solved();
+  }
+  function set(i, v) {
+    if (giv[i] >= 0 || vals[i] === v) return;
+    hist.push([i, vals[i]]); vals[i] = v; delete wrong[i]; sel = i; ctx.move(rc(n, i) + '=' + (v < 0 ? 'clear' : v)); ctx.msg(''); paint(); if (v >= 0) checkDone();
+  }
+  return {
+    tools: { undo: true, notes: false, hint: true, check: true, restart: true },
+    mount: function () {
+      var grid = h('div', { class: 'tk', style: '--n:' + n });
+      range(N).forEach(function (i) {
+        var b = h('button', { class: 'cell' + (giv[i] >= 0 ? ' given' : ''), 'aria-label': rcName(n, i), onclick: function () { var v = vals[i]; set(i, v < 0 ? 0 : v === 0 ? 1 : -1); } }, h('span', { class: 'v' }));
+        cells.push(b); grid.appendChild(b);
+      });
+      ctx.board.appendChild(grid); paint();
+    },
+    undo: function () { var r = hist.pop(); if (!r) return false; vals[r[0]] = r[1]; delete wrong[r[0]]; sel = r[0]; paint(); return true; },
+    hint: function () {
+      var i;
+      for (i = 0; i < N; i++) if (giv[i] < 0 && vals[i] >= 0 && vals[i] !== sol[i]) {
+        hist.push([i, vals[i]]); vals[i] = -1; delete wrong[i]; sel = i; ctx.hintUsed('clear ' + rc(n, i)); paint(); flash(cells[i], 'flash');
+        ctx.msg('The entry in ' + rcName(n, i) + ' was wrong, so it has been cleared.'); return;
+      }
+      var forced = PT.tkLogic(n, vals, 2).grid, pickI = -1, why = 'revealed from the solution';
+      for (i = 0; i < N; i++) if (vals[i] < 0 && forced[i] >= 0) { pickI = i; why = 'the row and column rules force it'; break; }
+      if (pickI < 0) pickI = vals.indexOf(-1);
+      if (pickI < 0) return;
+      hist.push([pickI, -1]); vals[pickI] = sol[pickI]; sel = pickI; ctx.hintUsed(rc(n, pickI) + '=' + sol[pickI]); paint(); flash(cells[pickI], 'flash');
+      ctx.msg('Placed ' + sol[pickI] + ' in ' + rcName(n, pickI) + ': ' + why + '.'); checkDone();
+    },
+    check: function () {
+      var cnt = 0; wrong = {};
+      for (var i = 0; i < N; i++) if (giv[i] < 0 && vals[i] >= 0 && vals[i] !== sol[i]) { wrong[i] = 1; cnt++; }
+      ctx.checked(cnt); paint();
+      ctx.msg(cnt ? cnt + (cnt === 1 ? ' wrong entry is marked.' : ' wrong entries are marked.') : 'No mistakes so far.', cnt ? 'bad' : 'good');
+    },
+    restart: function () { vals = giv.slice(); hist = []; wrong = {}; sel = -1; paint(); },
+    key: function (e) {
+      var k = e.key;
+      if (k.indexOf('Arrow') === 0) {
+        if (sel < 0) sel = 0;
+        else if (k === 'ArrowUp' && sel >= n) sel -= n; else if (k === 'ArrowDown' && sel < N - n) sel += n;
+        else if (k === 'ArrowLeft' && sel % n > 0) sel--; else if (k === 'ArrowRight' && sel % n < n - 1) sel++;
+        paint(); return true;
+      }
+      if (sel >= 0 && (k === '0' || k === '1')) { set(sel, +k); return true; }
+      if (sel >= 0 && (k === 'Backspace' || k === 'Delete')) { set(sel, -1); return true; }
+      return false;
+    },
+    state: function () { return { values: vals }; },
+    solve: function () { vals = sol.slice(); paint(); checkDone(); }
+  };
+}
+
+function nonogramView(ctx) {
+  var p = ctx.puzzle, R = p.R, C = p.C, sol = p.solution, st = new Array(R * C).fill(-1), mode = 1, hist = [], wrong = {};
+  var cells = [], rowCl = [], colCl = [], drag = null, modeBtns = [], grid;
+  ctx.goal('Paint the picture. A clue like <b>3 1</b> means a run of three, a gap, then a run of one.');
+  function eq(a, b) { if (a.length !== b.length) return false; for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false; return true; }
+  function paintCell(i) { var cl = cells[i].classList; cl.toggle('fill', st[i] === 1); cl.toggle('x', st[i] === 0); cl.toggle('wrong', !!wrong[i]); }
+  function paintClues() {
+    var r, c, line;
+    for (r = 0; r < R; r++) { line = []; for (c = 0; c < C; c++) line.push(st[r * C + c] === 1 ? 1 : 0); rowCl[r].classList.toggle('done', eq(PT.ngClues(line), p.rowClues[r])); }
+    for (c = 0; c < C; c++) { line = []; for (r = 0; r < R; r++) line.push(st[r * C + c] === 1 ? 1 : 0); colCl[c].classList.toggle('done', eq(PT.ngClues(line), p.colClues[c])); }
+  }
+  function paint() { for (var i = 0; i < R * C; i++) paintCell(i); paintClues(); }
+  function checkDone() { for (var i = 0; i < R * C; i++) if ((st[i] === 1) !== (sol[i] === 1)) return; ctx.solved(); }
+  function apply(i) { if (!drag || st[i] === drag.target) return; st[i] = drag.target; delete wrong[i]; drag.count++; paintCell(i); }
+  function endDrag() {
+    if (!drag) return; var d = drag; drag = null;
+    if (d.count) { hist.push(d.snap); ctx.move((d.target === 1 ? 'fill ' : d.target === 0 ? 'cross ' : 'clear ') + d.count); ctx.msg(''); paintClues(); checkDone(); }
+  }
+  function startDrag(i) { drag = { target: st[i] === mode ? -1 : mode, snap: st.slice(), count: 0 }; apply(i); }
+  function setMode(m) { mode = m; modeBtns.forEach(function (b, k) { b.classList.toggle('on', (k === 0 ? 1 : 0) === mode); }); }
+  return {
+    tools: { undo: true, notes: false, hint: true, check: true, restart: true },
+    mount: function () {
+      grid = h('div', { class: 'nono', style: '--n:' + C });
+      grid.appendChild(h('div'));
+      range(C).forEach(function (c) { var e = h('div', { class: 'cl col' }, (p.colClues[c].length ? p.colClues[c] : [0]).map(function (x) { return h('span', { text: String(x) }); })); colCl.push(e); grid.appendChild(e); });
+      range(R).forEach(function (r) {
+        var e = h('div', { class: 'cl row' }, (p.rowClues[r].length ? p.rowClues[r] : [0]).map(function (x) { return h('span', { text: String(x) }); })); rowCl.push(e); grid.appendChild(e);
+        range(C).forEach(function (c) {
+          var i = r * C + c, cls = 'cell';
+          if (c === 0) cls += ' c0'; if (r === 0) cls += ' r0'; if ((c + 1) % 5 === 0 || c === C - 1) cls += ' e5c'; if ((r + 1) % 5 === 0 || r === R - 1) cls += ' e5r';
+          var b = h('button', { class: cls, 'data-i': i, 'aria-label': rcName(C, i) });
+          b.addEventListener('click', function (ev) { if (ev.detail === 0) { startDrag(i); endDrag(); } });
+          cells.push(b); grid.appendChild(b);
+        });
+      });
+      grid.addEventListener('pointerdown', function (ev) {
+        var t = ev.target.closest('.cell'); if (!t) return;
+        ev.preventDefault(); startDrag(+t.getAttribute('data-i'));
+      });
+      grid.addEventListener('pointermove', function (ev) {
+        if (!drag) return;
+        var t = document.elementFromPoint(ev.clientX, ev.clientY); t = t && t.closest ? t.closest('.nono .cell') : null;
+        if (t) apply(+t.getAttribute('data-i'));
+      });
+      window.addEventListener('pointerup', endDrag); window.addEventListener('pointercancel', endDrag);
+      ctx.board.appendChild(grid);
+      ['Fill', 'Cross'].forEach(function (name, k) { var b = h('button', { class: 'btn wide', text: name, onclick: function () { setMode(k === 0 ? 1 : 0); } }); modeBtns.push(b); ctx.pad.appendChild(b); });
+      setMode(1); paint();
+    },
+    unmount: function () { window.removeEventListener('pointerup', endDrag); window.removeEventListener('pointercancel', endDrag); },
+    undo: function () { var s = hist.pop(); if (!s) return false; st = s; wrong = {}; paint(); return true; },
+    hint: function () {
+      var i, r, c, fixes = [];
+      for (i = 0; i < R * C; i++) if ((st[i] === 1 && sol[i] === 0) || (st[i] === 0 && sol[i] === 1)) {
+        hist.push(st.slice()); st[i] = sol[i]; delete wrong[i]; ctx.hintUsed('fix ' + rc(C, i)); paint(); flash(cells[i], 'flash');
+        ctx.msg('One wrong cell in ' + rcName(C, i) + ' has been corrected.'); checkDone(); return;
+      }
+      var best = null;
+      for (r = 0; r < R; r++) { var u = []; for (c = 0; c < C; c++) if (st[r * C + c] < 0) u.push(r * C + c); if (!best || u.length > best.u.length) best = { u: u, name: 'row ' + (r + 1) }; }
+      for (c = 0; c < C; c++) { var u2 = []; for (r = 0; r < R; r++) if (st[r * C + c] < 0) u2.push(r * C + c); if (u2.length > best.u.length) best = { u: u2, name: 'column ' + (c + 1) }; }
+      if (!best.u.length) return;
+      fixes = best.u.slice(0, Math.max(1, Math.ceil(C / 3)));
+      hist.push(st.slice()); fixes.forEach(function (x) { st[x] = sol[x]; });
+      ctx.hintUsed('reveal ' + fixes.length + ' in ' + best.name); paint(); fixes.forEach(function (x) { flash(cells[x], 'flash'); });
+      ctx.msg('Revealed ' + fixes.length + (fixes.length === 1 ? ' cell' : ' cells') + ' in ' + best.name + '.'); checkDone();
+    },
+    check: function () {
+      var cnt = 0; wrong = {};
+      for (var i = 0; i < R * C; i++) if ((st[i] === 1 && sol[i] === 0) || (st[i] === 0 && sol[i] === 1)) { wrong[i] = 1; cnt++; }
+      ctx.checked(cnt); paint();
+      ctx.msg(cnt ? cnt + (cnt === 1 ? ' wrong cell is marked.' : ' wrong cells are marked.') : 'No mistakes so far.', cnt ? 'bad' : 'good');
+    },
+    restart: function () { st = new Array(R * C).fill(-1); hist = []; wrong = {}; paint(); },
+    key: function () { return false; },
+    state: function () { return { cells: st }; },
+    solve: function () { st = sol.map(function (v) { return v ? 1 : -1; }); paint(); checkDone(); }
+  };
+}
+
+function mazeView(ctx) {
+  var p = ctx.puzzle, R = p.R, C = p.C, data = p.cells, target = p.target, path = [0], els = [], line, goalIdx = R * C - 1;
+  function totalAt(len) { var t = data[0].v; for (var k = 1; k < len; k++) t = PT.mmApply(t, data[path[k]]); return t; }
+  function adj(a, b) { var ar = Math.floor(a / C), ac = a % C, br = Math.floor(b / C), bc = b % C; return Math.abs(ar - br) + Math.abs(ac - bc) === 1; }
+  function paint() {
+    var head = path[path.length - 1], inPath = {}; path.forEach(function (x) { inPath[x] = 1; });
+    els.forEach(function (el, i) {
+      var cl = el.classList;
+      cl.toggle('on', !!inPath[i] && i !== head); cl.toggle('head', i === head); cl.toggle('next', !inPath[i] && adj(head, i));
+    });
+    line.setAttribute('points', path.map(function (x) { return (x % C + 0.5) + ',' + (Math.floor(x / C) + 0.5); }).join(' '));
+    ctx.goal('Reach Finish on exactly <b>' + target + '</b>. Running total <b>' + totalAt(path.length) + '</b> after <b>' + (path.length - 1) + '</b> steps.');
+  }
+  function step(i) {
+    var idx = path.indexOf(i);
+    if (idx >= 0) { if (idx < path.length - 1) { path.length = idx + 1; ctx.undoUsed('back to ' + rc(C, i)); ctx.msg(''); paint(); } return; }
+    var head = path[path.length - 1];
+    if (!adj(head, i)) { ctx.msg('Pick a cell next to your current position.'); return; }
+    var cur = totalAt(path.length), t = PT.mmApply(cur, data[i]);
+    if (t === null) { ctx.msg(cur + ' does not divide evenly by ' + data[i].v + ', so that step is blocked.', 'bad'); return; }
+    path.push(i); ctx.move(rc(C, i) + ' total ' + t); ctx.msg(''); paint();
+    if (i === goalIdx) {
+      if (t === target) ctx.solved();
+      else { ctx.mistake(1); ctx.msg('You finished on ' + t + ' but need ' + target + '. Step back and try another route.', 'bad'); }
+    }
+  }
+  return {
+    tools: { undo: true, notes: false, hint: true, check: false, restart: true },
+    mount: function () {
+      var grid = h('div', { class: 'maze', style: '--c:' + C });
+      data.forEach(function (cell, i) {
+        var txt = cell.op === 's' ? String(cell.v) : OPS[cell.op] + cell.v, tag = i === 0 ? 'Start' : i === goalIdx ? 'Finish' : '';
+        var b = h('button', { class: 'cell' + (i === goalIdx ? ' end' : ''), 'aria-label': rcName(C, i) + ', ' + (cell.op === 's' ? 'start at ' + cell.v : txt) + (tag === 'Finish' ? ', finish' : ''), onclick: function () { step(i); } }, [tag ? h('small', { text: tag }) : null, h('span', { text: txt })]);
+        els.push(b); grid.appendChild(b);
+      });
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 ' + C + ' ' + R); svg.setAttribute('preserveAspectRatio', 'none');
+      line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline'); svg.appendChild(line); grid.appendChild(svg);
+      ctx.board.appendChild(grid); paint();
+    },
+    undo: function () { if (path.length < 2) return false; path.pop(); paint(); return true; },
+    hint: function () {
+      var s = p.solution, k = 0;
+      while (k < path.length && k < s.length && path[k] === s[k]) k++;
+      var cut = path.length > k;
+      if (cut) path.length = k;
+      if (k >= s.length) return;
+      path.push(s[k]); ctx.hintUsed('step ' + rc(C, s[k]));
+      ctx.msg(cut ? 'Your route left a working one, so it was backed up and moved one step along it.' : 'Moved one step along a route that works.'); paint();
+      if (s[k] === goalIdx) ctx.solved();
+    },
+    restart: function () { path = [0]; paint(); },
+    key: function (e) {
+      var head = path[path.length - 1], r = Math.floor(head / C), c = head % C, t = -1;
+      if (e.key === 'ArrowUp' && r > 0) t = head - C; else if (e.key === 'ArrowDown' && r < R - 1) t = head + C;
+      else if (e.key === 'ArrowLeft' && c > 0) t = head - 1; else if (e.key === 'ArrowRight' && c < C - 1) t = head + 1;
+      if (t >= 0) { step(t); return true; }
+      return false;
+    },
+    state: function () { return { path: path, total: totalAt(path.length) }; },
+    solve: function () { path = [0]; p.solution.slice(1).forEach(function (x) { if (!ctx.isDone()) step(x); }); }
+  };
+}
+
+function slidingView(ctx) {
+  var p = ctx.puzzle, n = p.n, N = n * n, tiles = p.tiles.slice(), hist = [], els = {}, opt = ctx.optimal;
+  function solved() { for (var i = 0; i < N - 1; i++) if (tiles[i] !== i + 1) return false; return true; }
+  function place() {
+    tiles.forEach(function (v, i) {
+      if (!v) return;
+      els[v].style.transform = 'translate(' + (i % n) * 100 + '%,' + Math.floor(i / n) * 100 + '%)';
+      els[v].classList.toggle('home', i === v - 1);
+    });
+    ctx.goal('Order the tiles <b>1–' + (N - 1) + '</b> with the gap last. Moves <b>' + ctx.moves() + '</b>' + (opt ? ', shortest possible <b>' + opt + '</b>.' : '.'));
+  }
+  function swap(pos, record) { var z = tiles.indexOf(0); tiles[z] = tiles[pos]; tiles[pos] = 0; if (record) { hist.push(z); ctx.move('tile ' + tiles[z]); } }
+  function tap(v) {
+    var pos = tiles.indexOf(v), z = tiles.indexOf(0), pr = Math.floor(pos / n), pc = pos % n, zr = Math.floor(z / n), zc = z % n, stepBy;
+    if (pr === zr && pc !== zc) stepBy = pc > zc ? 1 : -1; else if (pc === zc && pr !== zr) stepBy = pr > zr ? n : -n;
+    else { ctx.msg('That tile is not in line with the gap.'); return; }
+    while (tiles.indexOf(0) !== pos) swap(tiles.indexOf(0) + stepBy, true);
+    ctx.msg(''); place(); if (solved()) ctx.solved();
+  }
+  return {
+    tools: { undo: true, notes: false, hint: true, check: false, restart: true },
+    mount: function () {
+      var wrap = h('div', { class: 'slide', style: '--n:' + n });
+      for (var v = 1; v < N; v++) (function (v) { els[v] = h('button', { class: 'tile', 'aria-label': 'Tile ' + v, onclick: function () { tap(v); } }, h('span', { text: String(v) })); wrap.appendChild(els[v]); })(v);
+      ctx.board.appendChild(wrap); place();
+    },
+    undo: function () { var z = hist.pop(); if (z === undefined) return false; swap(z, false); place(); return true; },
+    hint: function () {
+      var z = tiles.indexOf(0), zr = Math.floor(z / n), zc = z % n, v;
+      if (n === 3) {
+        var cur = PT.slide3Dist(tiles), mv = [], best = -1;
+        if (zr > 0) mv.push(z - 3); if (zr < 2) mv.push(z + 3); if (zc > 0) mv.push(z - 1); if (zc < 2) mv.push(z + 1);
+        mv.forEach(function (m) { var t = tiles.slice(); t[z] = t[m]; t[m] = 0; if (PT.slide3Dist(t) === cur - 1) best = m; });
+        if (best < 0) return;
+        v = tiles[best]; ctx.hintUsed('tile ' + v); flash(els[v], 'pulse');
+        ctx.msg('Slide tile ' + v + '. The shortest finish from here is ' + cur + (cur === 1 ? ' move.' : ' moves.'));
+      } else {
+        for (var i = 0; i < N - 1; i++) if (tiles[i] !== i + 1) { v = i + 1; break; }
+        if (!v) return;
+        ctx.hintUsed('focus tile ' + v); flash(els[v], 'pulse');
+        ctx.msg('Work on tile ' + v + ' next. Fill the top row, then the left column, and solve the last block at the end.');
+      }
+    },
+    restart: function () { tiles = p.tiles.slice(); hist = []; place(); },
+    key: function (e) {
+      var z = tiles.indexOf(0), zr = Math.floor(z / n), zc = z % n, src = -1;
+      if (e.key === 'ArrowUp' && zr < n - 1) src = z + n; else if (e.key === 'ArrowDown' && zr > 0) src = z - n;
+      else if (e.key === 'ArrowLeft' && zc < n - 1) src = z + 1; else if (e.key === 'ArrowRight' && zc > 0) src = z - 1;
+      if (src >= 0) { tap(tiles[src]); return true; }
+      return false;
+    },
+    state: function () { return { tiles: tiles }; },
+    solve: function () {
+      if (n !== 3) { tiles = range(N).map(function (i) { return (i + 1) % N; }); var t = tiles[N - 2]; tiles[N - 2] = 0; tiles[N - 1] = t; place(); tap(t); return; }
+      var guard = 0;
+      while (!solved() && guard++ < 40) {
+        var z = tiles.indexOf(0), zr = Math.floor(z / 3), zc = z % 3, cur = PT.slide3Dist(tiles), mv = [], best = -1;
+        if (zr > 0) mv.push(z - 3); if (zr < 2) mv.push(z + 3); if (zc > 0) mv.push(z - 1); if (zc < 2) mv.push(z + 1);
+        mv.forEach(function (m) { var t2 = tiles.slice(); t2[z] = t2[m]; t2[m] = 0; if (PT.slide3Dist(t2) === cur - 1) best = m; });
+        tap(tiles[best]);
+      }
+    }
+  };
+}
+
+function lightsView(ctx) {
+  var p = ctx.puzzle, n = p.n, N = n * n, lit = p.lit.slice(), hist = [], els = [], opt = ctx.optimal;
+  function flip(i) {
+    var r = Math.floor(i / n), c = i % n;
+    lit[i] ^= 1; if (r > 0) lit[i - n] ^= 1; if (r < n - 1) lit[i + n] ^= 1; if (c > 0) lit[i - 1] ^= 1; if (c < n - 1) lit[i + 1] ^= 1;
+  }
+  function paint() {
+    var on = 0;
+    els.forEach(function (el, i) { el.classList.toggle('lit', !!lit[i]); el.setAttribute('aria-pressed', lit[i] ? 'true' : 'false'); if (lit[i]) on++; });
+    ctx.goal('Turn every light off. <b>' + on + '</b> still on. Presses <b>' + ctx.moves() + '</b>, fewest possible <b>' + opt + '</b>.');
+  }
+  function press(i) { flip(i); hist.push(i); ctx.move('press ' + rc(n, i)); ctx.msg(''); paint(); if (lit.indexOf(1) < 0) ctx.solved(); }
+  return {
+    tools: { undo: true, notes: false, hint: true, check: false, restart: true },
+    mount: function () {
+      var grid = h('div', { class: 'lights', style: '--n:' + n });
+      range(N).forEach(function (i) { var b = h('button', { class: 'lamp', 'aria-label': 'Light at ' + rcName(n, i), onclick: function () { press(i); } }); els.push(b); grid.appendChild(b); });
+      ctx.board.appendChild(grid); paint();
+    },
+    undo: function () { var i = hist.pop(); if (i === undefined) return false; flip(i); paint(); return true; },
+    hint: function () {
+      var s = PT.lightsSolve(n, lit); if (!s) return;
+      var i = s.indexOf(1), w = s.reduce(function (a, b) { return a + b; }, 0); if (i < 0) return;
+      ctx.hintUsed('press ' + rc(n, i)); flash(els[i], 'pulse');
+      ctx.msg('Press the highlighted light. ' + w + (w === 1 ? ' press finishes' : ' presses finish') + ' it from here.');
+    },
+    restart: function () { lit = p.lit.slice(); hist = []; paint(); },
+    key: function () { return false; },
+    state: function () { return { lit: lit }; },
+    solve: function () { var s = PT.lightsSolve(n, lit); s.forEach(function (v, i) { if (v && !ctx.isDone()) press(i); }); }
+  };
+}
+
+function ballsortView(ctx) {
+  var p = ctx.puzzle, hh = p.h, tubes = p.tubes.map(function (t) { return t.slice(); }), sel = -1, hist = [], els = [];
+  ctx.goal('Sort the balls so each tube holds <b>' + hh + '</b> of one colour.');
+  function paint() {
+    tubes.forEach(function (t, j) {
+      var el = els[j]; el.textContent = '';
+      t.forEach(function (c) { el.appendChild(h('span', { class: 'ball', style: 'background:var(--b' + c + ')', text: String(c + 1) })); });
+      var full = t.length === hh && t.every(function (v) { return v === t[0]; });
+      el.classList.toggle('sel', j === sel); el.classList.toggle('done', full);
+      el.setAttribute('aria-label', 'Tube ' + (j + 1) + ': ' + (t.length ? t.map(function (c) { return c + 1; }).join(', ') + ' from bottom to top' : 'empty'));
+    });
+  }
+  function click(j) {
+    if (sel < 0) { if (tubes[j].length) { sel = j; paint(); } return; }
+    if (sel === j) { sel = -1; paint(); return; }
+    var src = tubes[sel], dst = tubes[j], ball = src[src.length - 1];
+    if (dst.length < hh && (!dst.length || dst[dst.length - 1] === ball)) {
+      dst.push(src.pop()); hist.push([sel, j]); ctx.move('tube ' + (sel + 1) + ' to ' + (j + 1)); sel = -1; ctx.msg(''); paint();
+      if (PT.bsDone(tubes, hh)) ctx.solved();
+    } else {
+      ctx.msg(dst.length >= hh ? 'That tube is full.' : 'A ball can only land on the same colour or in an empty tube.');
+      sel = tubes[j].length ? j : -1; paint();
+    }
+  }
+  return {
+    tools: { undo: true, notes: false, hint: true, check: false, restart: true },
+    mount: function () {
+      var wrap = h('div', { class: 'tubes', style: '--h:' + hh });
+      tubes.forEach(function (t, j) { var b = h('button', { class: 'tube', onclick: function () { click(j); } }); els.push(b); wrap.appendChild(b); });
+      ctx.board.appendChild(wrap); paint();
+    },
+    undo: function () { var m = hist.pop(); if (!m) return false; tubes[m[0]].push(tubes[m[1]].pop()); sel = -1; paint(); return true; },
+    hint: function () {
+      var s = PT.bsSolve(tubes, hh, 40000);
+      if (!s) { ctx.msg('There is no way to finish from this position. Undo a few moves or restart.', 'bad'); return; }
+      if (!s.length) return;
+      ctx.hintUsed('tube ' + (s[0][0] + 1) + ' to ' + (s[0][1] + 1)); sel = -1; paint(); flash(els[s[0][0]], 'pulse'); flash(els[s[0][1]], 'pulse');
+      ctx.msg('Move the top ball of tube ' + (s[0][0] + 1) + ' to tube ' + (s[0][1] + 1) + '.');
+    },
+    restart: function () { tubes = p.tubes.map(function (t) { return t.slice(); }); hist = []; sel = -1; paint(); },
+    key: function () { return false; },
+    state: function () { return { tubes: tubes }; },
+    solve: function () { var s = PT.bsSolve(tubes, hh, 200000); sel = -1; s.forEach(function (m) { if (!ctx.isDone()) { click(m[0]); click(m[1]); } }); }
+  };
+}
+
+function mastermindView(ctx) {
+  var p = ctx.puzzle, code = p.code, P = p.pegs, rows = [], cur = new Array(P).fill(-1), locked = {}, wrap, over = false;
+  function pegEl(c, opts) {
+    opts = opts || {};
+    return h(opts.click ? 'button' : 'span', { class: 'peg' + (c >= 0 ? ' set' : '') + (opts.locked ? ' locked' : ''), style: c >= 0 ? 'background:var(--b' + c + ')' : null, text: c >= 0 ? String(c + 1) : '', 'aria-label': opts.label, onclick: opts.click });
+  }
+  function render() {
+    wrap.textContent = '';
+    for (var k = 0; k < p.guesses; k++) {
+      if (k < rows.length) {
+        var rw = rows[k];
+        wrap.appendChild(h('div', { class: 'mm-row' }, [h('span', { class: 'ix', text: String(k + 1) }), h('div', { class: 'mm-pegs' }, rw.g.map(function (c) { return pegEl(c); })), h('span', { class: 'mm-fb', html: '<b>' + rw.fb[0] + '</b> exact<br><b>' + rw.fb[1] + '</b> misplaced' })]));
+      } else if (k === rows.length && !over) {
+        wrap.appendChild(h('div', { class: 'mm-row cur' }, [h('span', { class: 'ix', text: String(k + 1) }), h('div', { class: 'mm-pegs' }, cur.map(function (c, i) {
+          return pegEl(c, { locked: locked[i], label: 'Slot ' + (i + 1) + (c >= 0 ? ', colour ' + (c + 1) : ', empty'), click: function () { if (!locked[i] && cur[i] >= 0) { cur[i] = -1; render(); } } });
+        })), h('span', { class: 'mm-fb', text: 'your guess' })]));
+      } else {
+        wrap.appendChild(h('div', { class: 'mm-row empty' }, [h('span', { class: 'ix', text: String(k + 1) }), h('div', { class: 'mm-pegs' }, range(P).map(function () { return pegEl(-1); })), h('span')]));
+      }
+    }
+    ctx.goal('Find the <b>' + P + '</b>-peg code from <b>' + p.colors + '</b> colours. ' + (p.dups ? 'Colours can repeat.' : 'No colour repeats.') + ' Guess <b>' + Math.min(rows.length + 1, p.guesses) + '</b> of <b>' + p.guesses + '</b>.');
+  }
+  function add(c) {
+    var i = cur.indexOf(-1);
+    if (i < 0) { ctx.msg('The row is full. Submit it, or select a peg to clear it.'); return; }
+    if (!p.dups && cur.indexOf(c) >= 0) { ctx.msg('No colour repeats at this level.'); return; }
+    cur[i] = c; ctx.msg(''); render();
+  }
+  function submit() {
+    if (cur.indexOf(-1) >= 0) { ctx.msg('Fill every slot before submitting.'); return; }
+    var fb = PT.mmScore(code, cur);
+    rows.push({ g: cur.slice(), fb: fb }); ctx.move('guess ' + cur.map(function (c) { return c + 1; }).join('') + ' -> ' + fb[0] + ' exact, ' + fb[1] + ' misplaced');
+    if (fb[0] === P) { over = true; render(); ctx.solved(); return; }
+    if (rows.length >= p.guesses) { over = true; render(); ctx.failed('Out of guesses. The code was ' + code.map(function (c) { return c + 1; }).join(' ') + '.'); return; }
+    cur = cur.map(function (c, i) { return locked[i] ? code[i] : -1; }); ctx.msg(''); render();
+  }
+  return {
+    tools: { undo: true, notes: false, hint: true, check: false, restart: false },
+    mount: function () {
+      wrap = h('div', { class: 'mm' }); ctx.board.appendChild(wrap);
+      range(p.colors).forEach(function (c) { ctx.pad.appendChild(h('button', { class: 'peg set', style: 'background:var(--b' + c + ')', text: String(c + 1), 'aria-label': 'Colour ' + (c + 1), onclick: function () { add(c); } })); });
+      ctx.pad.appendChild(h('button', { class: 'btn wide primary', text: 'Submit guess', id: 'mm-submit', onclick: submit }));
+      render();
+    },
+    undo: function () { for (var i = P - 1; i >= 0; i--) if (cur[i] >= 0 && !locked[i]) { cur[i] = -1; render(); return true; } return false; },
+    hint: function () {
+      var open = range(P).filter(function (i) { return !locked[i]; }); if (open.length <= 1) { ctx.msg('Only one slot is left unrevealed. That one is yours to find.'); return; }
+      var i = open[0];
+      if (!p.dups) cur = cur.map(function (c, k) { return (k !== i && c === code[i] && !locked[k]) ? -1 : c; });
+      locked[i] = true; cur[i] = code[i]; ctx.hintUsed('slot ' + (i + 1)); render();
+      ctx.msg('Slot ' + (i + 1) + ' is colour ' + (code[i] + 1) + '. It stays locked in.');
+    },
+    restart: function () {},
+    key: function (e) {
+      if (/^[1-9]$/.test(e.key) && +e.key <= p.colors) { add(+e.key - 1); return true; }
+      if (e.key === 'Enter') { submit(); return true; }
+      if (e.key === 'Backspace') { this.undo(); return true; }
+      return false;
+    },
+    state: function () { return { guesses: rows.map(function (r) { return { guess: r.g, exact: r.fb[0], misplaced: r.fb[1] }; }) }; },
+    solve: function () { cur = code.slice(); submit(); }
+  };
+}
+function crossmathView(ctx) {
+  var p = ctx.puzzle, n = p.n, N = n * n, sol = p.solution, giv = p.givens, vals = giv.slice(), sel = -1, hist = [], wrong = {};
+  var cells = [], rowEl = [], colEl = [], padBtns = [], lastKey = 0;
+  ctx.goal('Place <b>1–' + N + '</b> once each so every row and column works out. Multiply and divide before you add and subtract.');
+  function line(isRow, k) { var a = []; for (var j = 0; j < n; j++) a.push(vals[isRow ? k * n + j : j * n + k]); return a; }
+  function paint() {
+    var cnt = {}, i, k;
+    for (i = 0; i < N; i++) if (vals[i]) cnt[vals[i]] = (cnt[vals[i]] || 0) + 1;
+    cells.forEach(function (c, i) {
+      var v = vals[i], cl = c.classList;
+      c.firstChild.textContent = v || '';
+      cl.toggle('sel', i === sel); cl.toggle('clash', !!v && cnt[v] > 1); cl.toggle('wrong', !!wrong[i]);
+    });
+    for (k = 0; k < n; k++) [[rowEl, 1, p.rowOps, p.rowRes], [colEl, 0, p.colOps, p.colRes]].forEach(function (d) {
+      var nums = line(d[1], k), full = nums.indexOf(0) < 0, ok = full && PT.cmEval(nums, d[2][k]) === d[3][k];
+      d[0][k].classList.toggle('ok', ok); d[0][k].classList.toggle('bad', full && !ok);
+    });
+    padBtns.forEach(function (b, d) { b.classList.toggle('done', !!cnt[d + 1]); });
+  }
+  function checkDone() {
+    for (var i = 0; i < N; i++) if (!vals[i]) return;
+    for (i = 0; i < N; i++) if (vals[i] !== sol[i]) { ctx.msg('Every cell is filled but some lines are off. The crossed-out results show which.', 'bad'); return; }
+    ctx.solved();
+  }
+  function input(d) {
+    if (sel < 0) { ctx.msg('Select a cell first.'); return; }
+    var i = sel; if (giv[i] || vals[i] === d) return;
+    hist.push([i, vals[i]]); vals[i] = d; delete wrong[i]; ctx.move(rc(n, i) + '=' + (d || 'clear')); ctx.msg(''); paint(); if (d) checkDone();
+  }
+  return {
+    tools: { undo: true, notes: false, hint: true, check: true, restart: true },
+    mount: function () {
+      var g = 2 * n + 1, grid = h('div', { class: 'cm', style: '--n:' + g }), R, C;
+      for (R = 0; R < g; R++) for (C = 0; C < g; C++) (function (R, C) {
+        var r = R >> 1, c = C >> 1, e;
+        if (R % 2 === 0 && R < 2 * n && C % 2 === 0 && C < 2 * n) {
+          var i = r * n + c;
+          e = h('button', { class: 'cell' + (giv[i] ? ' given' : ''), 'aria-label': rcName(n, i), onclick: function () { sel = i; paint(); } }, h('span', { class: 'v' }));
+          cells[i] = e;
+        } else if (R % 2 === 0 && R < 2 * n && C < 2 * n - 1) e = h('div', { class: 'cm-op', text: OPS[p.rowOps[r][c]] });
+        else if (R % 2 === 0 && R < 2 * n && C === 2 * n - 1) e = h('div', { class: 'cm-op', text: '=' });
+        else if (R % 2 === 0 && R < 2 * n) { e = h('div', { class: 'cm-res', text: String(p.rowRes[r]).replace('-', '−'), 'aria-label': 'Row ' + (r + 1) + ' equals ' + p.rowRes[r] }); rowEl[r] = e; }
+        else if (R % 2 === 1 && R < 2 * n - 1 && C % 2 === 0 && C < 2 * n) e = h('div', { class: 'cm-op', text: OPS[p.colOps[c][r]] });
+        else if (R === 2 * n - 1 && C % 2 === 0 && C < 2 * n) e = h('div', { class: 'cm-op', text: '=' });
+        else if (R === 2 * n && C % 2 === 0 && C < 2 * n) { e = h('div', { class: 'cm-res', text: String(p.colRes[c]).replace('-', '−'), 'aria-label': 'Column ' + (c + 1) + ' equals ' + p.colRes[c] }); colEl[c] = e; }
+        else e = h('div', { 'aria-hidden': 'true' });
+        grid.appendChild(e);
+      })(R, C);
+      ctx.board.appendChild(grid);
+      range(N).forEach(function (d) { var b = h('button', { class: 'btn', text: String(d + 1), 'aria-label': 'Number ' + (d + 1), onclick: function () { input(d + 1); } }); padBtns.push(b); ctx.pad.appendChild(b); });
+      ctx.pad.appendChild(h('button', { class: 'btn wide', text: 'Erase', onclick: function () { input(0); } }));
+      paint();
+    },
+    undo: function () { var r = hist.pop(); if (!r) return false; vals[r[0]] = r[1]; delete wrong[r[0]]; sel = r[0]; paint(); return true; },
+    hint: function () {
+      var i;
+      for (i = 0; i < N; i++) if (!giv[i] && vals[i] && vals[i] !== sol[i]) {
+        hist.push([i, vals[i]]); var was = vals[i]; vals[i] = 0; delete wrong[i]; sel = i; ctx.hintUsed('clear ' + rc(n, i)); paint(); flash(cells[i], 'flash');
+        ctx.msg('The ' + was + ' in ' + rcName(n, i) + ' was wrong, so it has been cleared.'); return;
+      }
+      i = (sel >= 0 && !vals[sel]) ? sel : vals.indexOf(0);
+      if (i < 0) return;
+      hist.push([i, 0]); vals[i] = sol[i]; sel = i; ctx.hintUsed(rc(n, i) + '=' + sol[i]); paint(); flash(cells[i], 'flash');
+      ctx.msg('Placed ' + sol[i] + ' in ' + rcName(n, i) + ', revealed from the solution.'); checkDone();
+    },
+    check: function () {
+      var cnt = 0; wrong = {};
+      for (var i = 0; i < N; i++) if (!giv[i] && vals[i] && vals[i] !== sol[i]) { wrong[i] = 1; cnt++; }
+      ctx.checked(cnt); paint();
+      ctx.msg(cnt ? cnt + (cnt === 1 ? ' wrong entry is marked.' : ' wrong entries are marked.') : 'No mistakes so far.', cnt ? 'bad' : 'good');
+    },
+    restart: function () { vals = giv.slice(); hist = []; wrong = {}; sel = -1; paint(); },
+    key: function (e) {
+      var k = e.key, now = Date.now();
+      if (/^[0-9]$/.test(k)) {
+        var d = +k, prev = sel >= 0 ? vals[sel] : 0;
+        if (N > 9 && prev === 1 && now - lastKey < 1200 && 10 + d <= N && !giv[sel]) { lastKey = 0; input(10 + d); return true; }
+        if (d >= 1 && d <= N) { lastKey = now; input(d); return true; }
+        if (d === 0) { input(0); return true; }
+        return false;
+      }
+      if (k === 'Backspace' || k === 'Delete') { input(0); return true; }
+      if (k.indexOf('Arrow') === 0) {
+        if (sel < 0) sel = 0;
+        else if (k === 'ArrowUp' && sel >= n) sel -= n; else if (k === 'ArrowDown' && sel < N - n) sel += n;
+        else if (k === 'ArrowLeft' && sel % n > 0) sel--; else if (k === 'ArrowRight' && sel % n < n - 1) sel++;
+        paint(); return true;
+      }
+      return false;
+    },
+    state: function () { return { values: vals }; },
+    solve: function () { vals = sol.slice(); paint(); checkDone(); }
+  };
+}
+var VIEWS = { sudoku: sudokuView, kenken: kenkenView, crossmath: crossmathView, mathmaze: mazeView, sliding: slidingView, lights: lightsView, ballsort: ballsortView, nonogram: nonogramView, takuzu: takuzuView, mastermind: mastermindView };
+
+/* ================= play flow ================= */
+var tick = null;
+function setMsg(text, kind) { var e = $('#p-msg'); e.textContent = text || ''; e.setAttribute('data-kind', kind || ''); }
+function setGoal(html) { $('#p-goal').innerHTML = html; }
+function show(screen) {
+  S.screen = screen;
+  ['hub', 'play', 'log', 'stats'].forEach(function (s) { $('#s-' + s).hidden = s !== screen; });
+  ['hub', 'log', 'stats'].forEach(function (s) { $('#nav-' + s).classList.toggle('on', s === screen || (screen === 'play' && s === 'hub')); });
+  window.scrollTo(0, 0);
+}
+function startPuzzle(type, level) {
+  if (!S.ready || S.cur) return;
+  var track = PT.TYPES[type].track, meta = PUZ[type];
+  var seed = type + ':' + level + ':' + Date.now().toString(36) + Math.floor(Math.random() * 1679616).toString(36);
+  var sec = $('#s-play'); sec.setAttribute('data-track', track);
+  $('#p-name').textContent = meta.name; $('#p-level').textContent = 'Level ' + level;
+  $('#board').textContent = ''; $('#pad').textContent = ''; setMsg(''); setGoal(''); $('#timer').textContent = '0:00';
+  $('#cooking').hidden = false; $('#paused').hidden = true; $('#leave-bar').hidden = true;
+  var rules = $('#p-rules'); rules.textContent = ''; meta.rules.forEach(function (r) { rules.appendChild(h('li', { text: r })); });
+  ['undo', 'notes', 'hint', 'check', 'restart'].forEach(function (t) { $('#t-' + t).disabled = true; });
+  $('#btn-pause').disabled = true;
+  var cur = S.cur = { loading: true, type: type, level: level };
+  show('play');
+  generateAsync(type, level, seed).then(function (gen) {
+    if (S.cur !== cur) return;
+    var timer = new Timer(), c = { moves: 0, mistakes: 0, undos: 0, hints: 0, checks: 0, restarts: 0 }, events = [];
+    function log(t, payload) { if (events.length < 600) events.push(Math.round(timer.ms()) + '|' + t + '|' + (payload == null ? '' : payload)); }
+    var att = {
+      attempt_id: 'a' + Date.now().toString(36) + Math.floor(Math.random() * 46656).toString(36),
+      player_id: Store.uid || 'local', track: track, puzzle_type: type, puzzle_name: meta.name, level: level, seed: seed,
+      generator_version: gen.generator_version, params_json: JSON.stringify(gen.params), puzzle_json: JSON.stringify(gen.puzzle),
+      difficulty_score: gen.difficulty, difficulty_label: gen.difficulty_label, optimal_moves: gen.optimal,
+      started_at: nowIso(), ended_at: null, active_ms: 0, wall_ms: 0, pause_count: 0, paused_ms: 0, outcome: 'in_progress',
+      move_count: 0, mistake_count: 0, undo_count: 0, hints_used: 0, check_count: 0, restart_count: 0,
+      final_state_json: null, stars: 0, score: 0, par_ms: null, counts_for_gate: false, player_level_at_start: S.level,
+      app_version: APP_VERSION, device: (navigator.userAgent || '').slice(0, 160), events: []
+    };
+    cur.loading = false; cur.gen = gen; cur.timer = timer; cur.c = c; cur.events = events; cur.attempt = att; cur.wall0 = Date.now(); cur.log = log; cur.done = false;
+    var ctx = {
+      puzzle: gen.puzzle, optimal: gen.optimal, board: $('#board'), pad: $('#pad'),
+      move: function (d) { c.moves++; log('move', d); },
+      mistake: function (k) { c.mistakes += (k || 1); log('mistake', k || 1); },
+      hintUsed: function (d) { c.hints++; log('hint', d); },
+      undoUsed: function (d) { c.undos++; log('undo', d); },
+      checked: function (k) { c.checks++; c.mistakes += k; log('check', k + ' wrong'); },
+      moves: function () { return c.moves; }, isDone: function () { return cur.done; },
+      msg: setMsg, goal: setGoal, log: log,
+      solved: function () { finish('solved'); }, failed: function (text) { finish('failed', text); }
+    };
+    cur.view = VIEWS[type](ctx);
+    cur.view.mount();
+    var tl = cur.view.tools;
+    ['undo', 'notes', 'hint', 'check', 'restart'].forEach(function (t) { var b = $('#t-' + t); b.disabled = !tl[t]; b.hidden = !tl[t]; });
+    $('#t-notes').classList.remove('on'); $('#btn-pause').disabled = false; $('#cooking').hidden = true;
+    S.attempts.unshift(att); Store.save(att);
+    log('start', gen.difficulty_label);
+    timer.start();
+    tick = setInterval(function () { $('#timer').textContent = fmtTime(timer.ms()); }, 250);
+  });
+}
+function snapshot(cur) {
+  var a = cur.attempt, c = cur.c, t = cur.timer;
+  a.active_ms = Math.round(t.ms()); a.wall_ms = Date.now() - cur.wall0; a.pause_count = t.pauses; a.paused_ms = Math.round(t.pausedMs());
+  a.move_count = c.moves; a.mistake_count = c.mistakes; a.undo_count = c.undos; a.hints_used = c.hints; a.check_count = c.checks; a.restart_count = c.restarts;
+  a.final_state_json = JSON.stringify(cur.view.state()); a.events = cur.events.slice();
+}
+function pauseGame(auto) {
+  var cur = S.cur; if (!cur || cur.loading || cur.done || !cur.timer.running()) return;
+  cur.timer.pause(); cur.log('pause', auto ? 'tab hidden' : 'button');
+  $('#paused').hidden = false; $('#btn-pause').textContent = 'Resume';
+  snapshot(cur); Store.save(cur.attempt);
+}
+function resumeGame() {
+  var cur = S.cur; if (!cur || cur.loading || cur.done || cur.timer.running()) return;
+  cur.timer.start(); cur.log('resume', ''); $('#paused').hidden = true; $('#btn-pause').textContent = 'Pause';
+}
+function teardown() {
+  var cur = S.cur; if (tick) { clearInterval(tick); tick = null; }
+  if (cur && cur.view && cur.view.unmount) cur.view.unmount();
+  S.cur = null; $('#btn-pause').textContent = 'Pause';
+}
+function finish(outcome, text) {
+  var cur = S.cur; if (!cur || cur.loading || cur.done) return;
+  cur.done = true; cur.timer.pause(false); cur.log('end', outcome);
+  var a = cur.attempt, c = cur.c, before = S.level;
+  snapshot(cur);
+  var ms = a.active_ms, par = parMs(a.puzzle_type, a.level, a.attempt_id), stars = 0;
+  if (outcome === 'solved') {
+    stars = 1;
+    if (c.hints === 0 || (c.hints <= 1 && ms <= par * 2)) stars = 2;
+    if (c.hints === 0 && c.mistakes <= 1 && ms <= par * 1.25) stars = 3;
+  }
+  a.ended_at = nowIso(); a.outcome = outcome; a.stars = stars; a.par_ms = Math.round(par);
+  a.counts_for_gate = outcome === 'solved' && c.hints <= 1;
+  a.score = outcome === 'solved' ? Math.max(0, a.level * 100 + stars * 50 - c.hints * 25 - c.mistakes * 5) : 0;
+  Store.save(a);
+  var after = computeLevel(), leveled = after > before;
+  if (leveled) {
+    S.level = after; S.progress.level = after; S.progress.unlocked[String(after)] = a.ended_at; Store.saveProgress(S.progress);
+  }
+  if (outcome !== 'abandoned') showResult(cur, text, leveled, before);
+  if (tick) { clearInterval(tick); tick = null; }
+  $('#timer').textContent = fmtTime(ms);
+}
+function leave() {
+  var cur = S.cur;
+  if (cur && !cur.loading && !cur.done) finish('abandoned');
+  teardown(); $('#result').hidden = true; renderHub(); show('hub');
+}
+function starSvg(on) { return '<svg viewBox="0 0 24 24"' + (on ? ' class="on"' : '') + ' aria-hidden="true"><path d="M12 2.6l2.9 6 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5L2.6 9.5l6.5-.9z"/></svg>'; }
+function showResult(cur, text, leveled, before) {
+  var a = cur.attempt, meta = PUZ[a.puzzle_type], solved = a.outcome === 'solved', box = $('#result');
+  var g = gateFor(before)[a.track], gate;
+  if (!solved) gate = 'This attempt is logged as failed and does not move your lane.';
+  else if (a.level < before) gate = 'Practice at Level ' + a.level + '. Only solves at Level ' + before + ' move your lanes.';
+  else if (!a.counts_for_gate) gate = 'Solved, but with more than one hint, so it does not count toward the next level.';
+  else if (leveled) gate = 'That finished the last lane at Level ' + before + '.';
+  else if (before >= MAX_LEVEL) gate = 'You are at the top level. Every solve here is for the record.';
+  else if (g.n >= NEED && !g.clean) gate = '<strong>' + TRACK[a.track].name + ' lane: ' + NEED + ' of ' + NEED + '</strong>, but it still needs one solve without hints.';
+  else gate = '<strong>' + TRACK[a.track].name + ' lane: ' + Math.min(g.n, NEED) + ' of ' + NEED + '</strong> toward Level ' + (before + 1) + '.' + (laneDone(g) ? ' This lane is finished.' : '');
+  var cell = function (k, v) { return h('div', null, [h('dt', { text: k }), h('dd', { text: String(v) })]); };
+  var card = h('div', { class: 'card', 'data-track': a.track, role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'res-title' }, [
+    h('div', null, [h('p', { class: 'eyebrow', text: meta.name + ' · Level ' + a.level }), h('h2', { id: 'res-title', text: solved ? 'Solved in ' + fmtTime(a.active_ms) : 'Not this time' })]),
+    solved ? h('div', { class: 'stars', role: 'img', 'aria-label': a.stars + ' of 3 stars', html: starSvg(a.stars >= 1) + starSvg(a.stars >= 2) + starSvg(a.stars >= 3) }) : h('p', { text: text || '' }),
+    h('dl', { class: 'rgrid', style: 'margin:0' }, [
+      cell('Time', fmtTime(a.active_ms)), cell('Moves', a.optimal_moves ? a.move_count + ' / ' + a.optimal_moves : a.move_count), cell('Mistakes', a.mistake_count),
+      cell('Hints', a.hints_used), cell('Undos', a.undo_count), cell('Pauses', a.pause_count)
+    ]),
+    solved ? h('p', { class: 'levelnote', text: 'Three stars need no hints, one mistake at most, and a time within ' + fmtTime(a.par_ms * 1.25) + '.' }) : null,
+    leveled ? h('div', { class: 'levelup', text: 'Level ' + S.level + ' unlocked' }) : null,
+    h('div', { class: 'gate', html: gate }),
+    h('div', { class: 'row' }, [
+      h('button', { class: 'btn primary', id: 'res-again', text: leveled ? 'Play Level ' + S.level : 'Another ' + meta.name, onclick: function () {
+        var type = a.puzzle_type, lv = a.level; if (leveled) { S.playLevel = S.level; lv = S.level; }
+        teardown(); box.hidden = true; renderHub(); startPuzzle(type, lv);
+      } }),
+      h('button', { class: 'btn', id: 'res-home', text: 'Back to lanes', onclick: function () { if (leveled) S.playLevel = S.level; leave(); } })
+    ])
+  ]);
+  box.textContent = ''; box.appendChild(card); box.hidden = false;
+  var f = $('#res-again'); if (f) f.focus();
+}
+
+/* ================= hub ================= */
+function renderHub() {
+  var L = S.level, g = gateFor(L), top = L >= MAX_LEVEL;
+  $('#hero-eyebrow').textContent = S.ready ? 'Level ' + L + ' of ' + MAX_LEVEL : 'Loading your progress';
+  $('#hero-title').textContent = top ? 'Top level reached. Every lane is open.' : 'Finish two puzzles in every lane to reach Level ' + (L + 1);
+  var lanes = $('#lanes'); lanes.textContent = '';
+  lanes.setAttribute('role', 'group'); lanes.setAttribute('aria-label', 'Progress toward the next level');
+  TRACKS.forEach(function (t) {
+    var x = g[t.id], n = Math.min(x.n, NEED), done = laneDone(x), pp = done ? 1 : (n >= NEED ? 0.75 : n / NEED);
+    var note = done ? 'lane finished' : n >= NEED ? 'needs a hint-free solve' : 'solved at Level ' + L;
+    lanes.appendChild(h('div', { class: 'lane', 'data-track': t.id, style: '--p:' + pp }, [
+      h('span', { class: 'lane-no', text: String(t.lane), 'aria-hidden': 'true' }),
+      h('span', { class: 'lane-name', text: t.name }),
+      h('span', { class: 'lane-run', 'aria-hidden': 'true' }, [h('i', { class: 'lane-fill' }), h('i', { class: 'pip p1' + (n >= 1 ? ' on' : '') }), h('i', { class: 'pip p2' + (done ? ' on' : '') }), h('i', { class: 'runner' })]),
+      h('span', { class: 'lane-count' }, [h('b', { text: n + ' of ' + NEED + ' ' }), note])
+    ]));
+  });
+  var lv = $('#levels'); lv.textContent = '';
+  for (var k = 1; k <= MAX_LEVEL; k++) (function (k) {
+    lv.appendChild(h('button', { class: 'lv' + (k === S.playLevel ? ' on' : '') + (k === L ? ' cur' : ''), text: String(k), disabled: k > L || !S.ready, 'aria-pressed': k === S.playLevel ? 'true' : 'false', 'aria-label': 'Level ' + k + (k > L ? ', locked' : ''), onclick: function () { S.playLevel = k; renderHub(); } }));
+  })(k);
+  $('#lv-note').textContent = !S.ready ? '' : S.playLevel < L ? 'Practice level. Solves here are logged but do not move the lanes.' : 'Your current level. Solves here move the lanes.';
+  var box = $('#tracks'); box.textContent = '';
+  TRACKS.forEach(function (t) {
+    var col = h('div', { class: 'track', 'data-track': t.id }, [
+      h('div', { class: 'track-head' }, [h('h2', { text: t.name }), h('span', { class: 'lane-tag', text: 'Lane ' + t.lane })]),
+      h('p', { class: 'track-blurb', text: t.blurb })
+    ]);
+    TYPE_ORDER[t.id].forEach(function (type) {
+      var m = PUZ[type], mine = S.attempts.filter(function (a) { return a.puzzle_type === type && a.level === S.playLevel && a.outcome === 'solved'; });
+      var best = mine.length ? Math.min.apply(null, mine.map(function (a) { return a.active_ms; })) : null;
+      col.appendChild(h('button', { class: 'pz', disabled: !S.ready, 'data-type': type, onclick: function () { startPuzzle(type, S.playLevel); } }, [
+        h('span', { class: 'pz-icon', html: m.icon }),
+        h('span', { class: 'pz-name', text: m.name }),
+        h('span', { class: 'pz-meta', text: mine.length ? mine.length + ' solved · best ' + fmtTime(best) : 'Not solved at Level ' + S.playLevel + ' yet' }),
+        h('span', { class: 'pz-desc', text: m.desc })
+      ]));
+    });
+    box.appendChild(col);
+  });
+}
+
+/* ================= attempt log ================= */
+var LOG_COLS = [
+  ['When', function (a) { return new Date(a.started_at).toLocaleString(undefined, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); }],
+  ['Puzzle', null], ['Lvl', function (a) { return a.level; }, 1], ['Result', null],
+  ['Time', function (a) { return fmtTime(a.active_ms); }, 1], ['Moves', function (a) { return a.move_count; }, 1], ['Mistakes', function (a) { return a.mistake_count; }, 1],
+  ['Hints', function (a) { return a.hints_used; }, 1], ['Undos', function (a) { return a.undo_count; }, 1], ['Pauses', function (a) { return a.pause_count; }, 1],
+  ['Stars', function (a) { return a.outcome === 'solved' ? a.stars : '-'; }, 1], ['Counts', function (a) { return a.counts_for_gate ? 'Yes' : 'No'; }]
+];
+function renderLog() {
+  var ft = $('#f-track').value, fo = $('#f-outcome').value, box = $('#log-table'); box.textContent = '';
+  var rows = S.attempts.filter(function (a) { return (!ft || a.track === ft) && (!fo || a.outcome === fo); });
+  $('#log-sub').textContent = S.attempts.length ? rows.length + ' of ' + S.attempts.length + ' attempts shown. Select a row for the full record.' : 'Every attempt is recorded here, solved or not.';
+  if (!rows.length) {
+    box.appendChild(h('div', { class: 'empty' }, [h('b', { text: S.attempts.length ? 'No attempts match these filters' : 'No attempts yet' }), S.attempts.length ? 'Change the lane or result filter to see more.' : 'Play a puzzle and it appears here with its time, moves, mistakes, hints and the exact puzzle you were given.']));
+    return;
+  }
+  var tb = h('tbody');
+  rows.forEach(function (a) {
+    var tr = h('tr', { 'data-track': a.track, tabindex: '0', class: S.openRow === a.attempt_id ? 'open' : '' }, LOG_COLS.map(function (c) {
+      if (c[0] === 'Puzzle') return h('td', null, [h('span', { class: 'dot' }), a.puzzle_name || a.puzzle_type]);
+      if (c[0] === 'Result') return h('td', null, h('span', { class: 'pill ' + a.outcome, text: a.outcome === 'in_progress' ? 'in progress' : a.outcome }));
+      return h('td', { class: c[2] ? 'num' : '', text: String(c[1](a)) });
+    }));
+    var toggle = function () { S.openRow = S.openRow === a.attempt_id ? null : a.attempt_id; renderLog(); };
+    tr.addEventListener('click', toggle); tr.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+    tb.appendChild(tr);
+    if (S.openRow === a.attempt_id) {
+      var item = function (k, v, cls) { return h('div', { class: cls || '' }, [h('div', { class: 'k', text: k }), h('div', { class: 'v' + (cls === 'full' ? ' scroll' : ''), text: v == null || v === '' ? '-' : String(v) })]); };
+      tb.appendChild(h('tr', { class: 'detail' }, h('td', { colspan: String(LOG_COLS.length) }, h('div', { class: 'dl' }, [
+        item('Attempt id', a.attempt_id), item('Lane', TRACK[a.track] ? TRACK[a.track].name : a.track), item('Seed', a.seed), item('Generator', a.generator_version),
+        item('Difficulty', a.difficulty_label), item('Started', a.started_at), item('Ended', a.ended_at), item('Active time', fmtTime(a.active_ms) + ' (' + a.active_ms + ' ms)'),
+        item('Wall time', fmtTime(a.wall_ms)), item('Paused', a.pause_count + (a.pause_count === 1 ? ' time, ' : ' times, ') + fmtTime(a.paused_ms)), item('Par time', fmtTime(a.par_ms)),
+        item('Moves / shortest', a.move_count + ' / ' + (a.optimal_moves == null ? 'n/a' : a.optimal_moves)), item('Checks', a.check_count), item('Restarts', a.restart_count),
+        item('Score', a.score), item('Level when played', a.player_level_at_start), item('App version', a.app_version),
+        item('Generator settings', a.params_json, 'full'), item('Puzzle as dealt', a.puzzle_json, 'full'), item('Final state', a.final_state_json, 'full'),
+        item('Event log (ms | event | detail)', (a.events || []).join('\n'), 'full')
+      ]))));
+    }
+  });
+  box.appendChild(h('table', null, [h('thead', null, h('tr', null, LOG_COLS.map(function (c) { return h('th', { class: c[2] ? 'num' : '', text: c[0] }); }))), tb]));
+}
+var CSV_FIELDS = ['attempt_id', 'player_id', 'track', 'puzzle_type', 'puzzle_name', 'level', 'seed', 'generator_version', 'difficulty_score', 'difficulty_label', 'started_at', 'ended_at', 'active_ms', 'wall_ms', 'pause_count', 'paused_ms', 'outcome', 'move_count', 'optimal_moves', 'mistake_count', 'undo_count', 'hints_used', 'check_count', 'restart_count', 'stars', 'score', 'par_ms', 'counts_for_gate', 'player_level_at_start', 'app_version', 'device', 'params_json', 'puzzle_json', 'final_state_json', 'events'];
+function toCsv(rows) {
+  var esc = function (v) { if (v == null) return ''; if (Array.isArray(v)) v = v.join(' ; '); v = String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  return [CSV_FIELDS.join(',')].concat(rows.map(function (a) { return CSV_FIELDS.map(function (f) { return esc(a[f]); }).join(','); })).join('\n');
+}
+function exportCsv() {
+  if (!S.attempts.length) { setSave('Nothing to export yet. Play a puzzle first.', ''); return; }
+  var csv = toCsv(S.attempts), name = 'puzzle-triathlon-attempts.csv';
+  var fallback = function () { $('#csv-fallback').hidden = false; var t = $('#csv-text'); t.value = csv; t.focus(); t.select(); };
+  if (window.claude && typeof window.claude.use === 'function') {
+    window.claude.use('downloads').then(function (dl) {
+      if (!dl) return fallback();
+      return dl.save({ filename: name, data: csv }).then(function () { setSave('Exported ' + S.attempts.length + ' attempts as CSV', 'ok'); }, function (e) { if (!e || e.code !== 'declined') fallback(); });
+    }).catch(fallback);
+    return;
+  }
+  try {
+    var a = h('a', { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: name });
+    document.body.appendChild(a); a.click(); a.remove();
+  } catch (e) { fallback(); }
+}
+
+/* ================= stats ================= */
+function renderStats() {
+  var box = $('#stats-body'); box.textContent = '';
+  var all = S.attempts.filter(function (a) { return a.outcome !== 'in_progress'; });
+  if (!all.length) { box.appendChild(h('div', { class: 'tablewrap' }, h('div', { class: 'empty' }, [h('b', { text: 'No stats yet' }), 'Finish or leave a puzzle and your solve rate, times and hint use show up here, split by lane and level.']))); return; }
+  var solved = all.filter(function (a) { return a.outcome === 'solved'; });
+  var atL = solved.filter(function (a) { return a.level === S.level; });
+  var tile = function (k, big, hint) { return h('div', { class: 'tilestat' }, [h('span', { class: 'k', text: k }), h('span', { class: 'big', text: big }), h('span', { class: 'hint', text: hint })]); };
+  box.appendChild(h('div', { class: 'tiles' }, [
+    tile('Attempts', String(all.length), solved.length + ' solved, ' + all.filter(function (a) { return a.outcome === 'abandoned'; }).length + ' abandoned, ' + all.filter(function (a) { return a.outcome === 'failed'; }).length + ' failed'),
+    tile('Solve rate', pct(solved.length, all.length), 'Around 85% is a good sign the level fits'),
+    tile('Median solve time', atL.length ? fmtTime(median(atL.map(function (a) { return a.active_ms; }))) : '-', 'At your current level, Level ' + S.level),
+    tile('Hint-free solves', pct(solved.filter(function (a) { return !a.hints_used; }).length, solved.length), 'Share of solves with no hint')
+  ]));
+  /* lane x level matrix */
+  var levels = range(S.level).map(function (i) { return i + 1; });
+  var head = h('tr', null, [h('th', { text: 'Lane' })].concat(levels.map(function (l) { return h('th', { text: 'L' + l }); })));
+  var body = h('tbody', null, TRACKS.map(function (t) {
+    return h('tr', { 'data-track': t.id }, [h('td', null, [h('span', { class: 'dot' }), t.name])].concat(levels.map(function (l) {
+      var xs = all.filter(function (a) { return a.track === t.id && a.level === l; }), sv2 = xs.filter(function (a) { return a.outcome === 'solved'; });
+      if (!xs.length) return h('td', { class: 'hc s0', text: '·', title: t.name + ', Level ' + l + ': no attempts' });
+      var rate = sv2.length / xs.length, cls = rate >= 0.85 ? 's4' : rate >= 0.6 ? 's3' : rate >= 0.3 ? 's2' : 's1';
+      var med = sv2.length ? fmtTime(median(sv2.map(function (a) { return a.active_ms; }))) : 'none solved';
+      return h('td', { class: 'hc ' + cls, title: t.name + ', Level ' + l + ': ' + sv2.length + ' solved of ' + xs.length + ' attempts, median ' + med }, [sv2.length + '/' + xs.length, h('small', { text: med })]);
+    })));
+  }));
+  box.appendChild(h('div', { class: 'panel' }, [
+    h('h2', { text: 'Solves by lane and level' }),
+    h('p', { text: 'Each cell shows solved over attempted, with the median solve time under it. Darker cells have a higher solve rate.' }),
+    h('div', { class: 'tablewrap' }, h('table', { class: 'heat' }, [h('thead', null, head), body])),
+    h('div', { class: 'legend' }, ['Solve rate', h('i', { class: 'hc s1' }), 'under 30%', h('i', { class: 'hc s2' }), '30–59%', h('i', { class: 'hc s3' }), '60–84%', h('i', { class: 'hc s4' }), '85% and up'])
+  ]));
+  /* per puzzle table */
+  var prow = [];
+  TRACKS.forEach(function (t) { TYPE_ORDER[t.id].forEach(function (type) {
+    var xs = all.filter(function (a) { return a.puzzle_type === type; }); if (!xs.length) return;
+    var s2 = xs.filter(function (a) { return a.outcome === 'solved'; }), times = s2.map(function (a) { return a.active_ms; });
+    var hints = s2.reduce(function (acc, a) { return acc + (a.hints_used || 0); }, 0);
+    prow.push(h('tr', { 'data-track': t.id }, [
+      h('td', null, [h('span', { class: 'dot' }), PUZ[type].name]), h('td', { class: 'num', text: String(xs.length) }), h('td', { class: 'num', text: pct(s2.length, xs.length) }),
+      h('td', { class: 'num', text: times.length ? fmtTime(median(times)) : '-' }), h('td', { class: 'num', text: times.length ? fmtTime(Math.min.apply(null, times)) : '-' }),
+      h('td', { class: 'num', text: s2.length ? (hints / s2.length).toFixed(1) : '-' }), h('td', { class: 'num', text: pct(xs.filter(function (a) { return a.outcome === 'abandoned'; }).length, xs.length) })
+    ]));
+  }); });
+  box.appendChild(h('div', { class: 'panel' }, [
+    h('h2', { text: 'By puzzle' }),
+    h('div', { class: 'tablewrap' }, h('table', { class: 'heat' }, [h('thead', null, h('tr', null, ['Puzzle', 'Attempts', 'Solve rate', 'Median time', 'Best time', 'Hints per solve', 'Abandoned'].map(function (x, i) { return h('th', { class: i ? 'num' : '', text: x }); }))), h('tbody', null, prow)]))
+  ]));
+  /* level timeline */
+  var ul = S.progress.unlocked || {}, keys = Object.keys(ul).map(Number).sort(function (a, b) { return a - b; });
+  if (keys.length) {
+    box.appendChild(h('div', { class: 'panel' }, [
+      h('h2', { text: 'Level-ups' }),
+      h('div', { class: 'tablewrap' }, h('table', { class: 'heat' }, [h('thead', null, h('tr', null, [h('th', { text: 'Level' }), h('th', { text: 'Unlocked' }), h('th', { class: 'num', text: 'Attempts at the level before' })])), h('tbody', null, keys.map(function (k) {
+        return h('tr', null, [h('td', { text: 'Level ' + k }), h('td', { text: new Date(ul[k]).toLocaleString() }), h('td', { class: 'num', text: String(all.filter(function (a) { return a.level === k - 1; }).length) })]);
+      }))]))
+    ]));
+  }
+}
+
+/* ================= wiring ================= */
+function nav(to) {
+  if (S.cur && !S.cur.done && S.screen === 'play' && to !== 'play') { $('#leave-bar').hidden = false; S.pendingNav = to; return; }
+  if (S.cur && S.cur.done) { teardown(); $('#result').hidden = true; }
+  if (to === 'hub') renderHub(); if (to === 'log') renderLog(); if (to === 'stats') renderStats();
+  show(to);
+}
+document.addEventListener('click', function (e) { var b = e.target.closest('[data-nav]'); if (b) nav(b.getAttribute('data-nav')); });
+$('#btn-back').addEventListener('click', function () { if (S.cur && S.cur.loading) { teardown(); show('hub'); return; } S.pendingNav = 'hub'; $('#leave-bar').hidden = false; });
+$('#btn-leave-no').addEventListener('click', function () { $('#leave-bar').hidden = true; });
+$('#btn-leave-yes').addEventListener('click', function () { var to = S.pendingNav || 'hub'; leave(); if (to !== 'hub') nav(to); });
+$('#btn-pause').addEventListener('click', function () { var c = S.cur; if (!c || c.loading) return; if (c.timer.running()) pauseGame(false); else resumeGame(); });
+$('#btn-resume').addEventListener('click', resumeGame);
+document.addEventListener('visibilitychange', function () { if (document.hidden) pauseGame(true); });
+function live() { var c = S.cur; return c && !c.loading && !c.done && c.timer.running() ? c : null; }
+$('#t-undo').addEventListener('click', function () { var c = live(); if (c && c.view.undo()) { c.c.undos++; c.log('undo', ''); setMsg(''); } });
+$('#t-hint').addEventListener('click', function () { var c = live(); if (c) c.view.hint(); });
+$('#t-check').addEventListener('click', function () { var c = live(); if (c) c.view.check(); });
+$('#t-notes').addEventListener('click', function () { var c = live(); if (c && c.view.toggleNotes) this.classList.toggle('on', c.view.toggleNotes()); });
+$('#t-restart').addEventListener('click', function () { var c = live(); if (c) { c.view.restart(); c.c.restarts++; c.log('restart', ''); setMsg('Board reset. The clock keeps running.'); } });
+document.addEventListener('keydown', function (e) {
+  var c = live(); if (!c || S.screen !== 'play' || e.metaKey || e.ctrlKey || e.altKey) return;
+  var tag = (e.target.tagName || '').toLowerCase(); if (tag === 'select' || tag === 'textarea' || tag === 'input') return;
+  if (e.key === 'p' || e.key === 'P') { pauseGame(false); e.preventDefault(); return; }
+  if (e.key === 'z' || e.key === 'Z') { $('#t-undo').click(); e.preventDefault(); return; }
+  if (e.key === 'h' || e.key === 'H') { $('#t-hint').click(); e.preventDefault(); return; }
+  if ((e.key === 'n' || e.key === 'N') && c.view.toggleNotes) { $('#t-notes').click(); e.preventDefault(); return; }
+  if (e.key === 'Enter' && tag === 'button' && c.type !== 'mastermind') return;
+  if (c.view.key(e)) e.preventDefault();
+});
+$('#f-track').addEventListener('change', renderLog); $('#f-outcome').addEventListener('change', renderLog);
+$('#btn-csv').addEventListener('click', exportCsv);
+
+/* ================= boot ================= */
+renderHub();
+Store.init().then(function () { return Store.load(); }).then(function (data) {
+  S.attempts = data.attempts || [];
+  if (data.progress && data.progress.level) S.progress = { level: data.progress.level, unlocked: data.progress.unlocked || {} };
+  S.attempts.forEach(function (a) {
+    if (a.outcome === 'in_progress') { a.outcome = 'abandoned'; a.ended_at = a.ended_at || a.started_at; a.counts_for_gate = false; if (Store.mode === 'db') Store.save(a); }
+  });
+  S.level = computeLevel(); S.playLevel = S.level; S.ready = true;
+  if (Store.mode === 'db') setSave('Attempts are saved to your own database in Claude', 'ok');
+  else { Store.saveLocal(); setSave(Store.broken ? 'The database could not be reached. Attempts are saved in this browser.' : 'Attempts are saved in this browser', Store.broken ? 'warn' : 'ok'); }
+  renderHub();
+});
+window.__pt = { S: S, Store: Store, startPuzzle: startPuzzle, finish: finish };
+})();
+</script>

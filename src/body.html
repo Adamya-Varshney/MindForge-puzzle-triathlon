@@ -1,0 +1,85 @@
+<div class="app" id="app">
+  <header class="top">
+    <button class="brand" data-nav="hub" id="brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>Puzzle Triathlon</button>
+    <nav class="nav" aria-label="Sections">
+      <button data-nav="hub" class="on" id="nav-hub">Play</button>
+      <button data-nav="log" id="nav-log">Attempt log</button>
+      <button data-nav="stats" id="nav-stats">Stats</button>
+    </nav>
+    <div class="save" id="save-status" data-state="">Loading your progress…</div>
+  </header>
+
+  <main>
+    <section id="s-hub" class="stack">
+      <div class="hero">
+        <div>
+          <p class="eyebrow" id="hero-eyebrow">Level 1 of 10</p>
+          <h1 id="hero-title">Finish two puzzles in every lane to reach Level 2</h1>
+          <p class="sub" id="hero-sub">A solve counts if you used one hint at most, and one solve per lane must be hint-free. Your time never blocks a level. It only sets your stars.</p>
+        </div>
+        <div class="lanes" id="lanes"></div>
+      </div>
+      <div class="levelbar">
+        <span class="lbl" id="lv-label">Playing level</span>
+        <div class="levels" id="levels" role="group" aria-labelledby="lv-label"></div>
+        <span class="levelnote" id="lv-note"></span>
+      </div>
+      <div class="tracks" id="tracks"></div>
+    </section>
+
+    <section id="s-play" hidden>
+      <div class="play">
+        <div class="playbar">
+          <button class="btn small" id="btn-back">Back to lanes</button>
+          <div class="ptitle"><h2 id="p-name">Puzzle</h2><span class="lvtag" id="p-level">Level 1</span></div>
+          <div class="stopwatch"><span class="t" id="timer" aria-label="Elapsed time">0:00</span><button id="btn-pause">Pause</button></div>
+        </div>
+        <div class="leave" id="leave-bar" hidden>
+          <span>Leave this puzzle? It will be logged as abandoned.</span>
+          <button class="btn small" id="btn-leave-yes">Leave</button>
+          <button class="btn small" id="btn-leave-no">Keep playing</button>
+        </div>
+        <p class="goal" id="p-goal"></p>
+        <div class="stage">
+          <div class="board" id="board"></div>
+          <div class="cover" id="cooking" hidden><div class="pot" aria-hidden="true"><i></i><i></i><i></i></div><h3>Cooking up a fresh puzzle</h3><p>Built from a new seed and checked by a solver.</p></div>
+          <div class="cover" id="paused" hidden><h3>Paused</h3><p>The clock is stopped and the board is hidden.</p><button class="btn primary" id="btn-resume">Resume</button></div>
+        </div>
+        <p class="msg" id="p-msg" aria-live="polite"></p>
+        <div class="pad" id="pad"></div>
+        <div class="tools">
+          <button class="btn" id="t-undo">Undo</button>
+          <button class="btn" id="t-notes">Notes</button>
+          <button class="btn" id="t-hint">Hint</button>
+          <button class="btn" id="t-check">Check</button>
+          <button class="btn" id="t-restart">Restart</button>
+        </div>
+        <details class="howto"><summary>How to play</summary><ul id="p-rules"></ul></details>
+      </div>
+    </section>
+
+    <section id="s-log" class="stack" hidden>
+      <div class="page-head">
+        <h1>Attempt log</h1>
+        <p id="log-sub">Every attempt is recorded here, solved or not. Select a row for the full record.</p>
+        <div class="filters">
+          <select id="f-track" aria-label="Filter by lane"><option value="">All lanes</option><option value="math">Maths</option><option value="analytical">Analytical</option><option value="logic">Logic</option></select>
+          <select id="f-outcome" aria-label="Filter by result"><option value="">All results</option><option value="solved">Solved</option><option value="failed">Failed</option><option value="abandoned">Abandoned</option></select>
+          <button class="btn small" id="btn-csv">Export CSV</button>
+        </div>
+      </div>
+      <div id="csv-fallback" hidden>
+        <p class="levelnote">This view can't save files. Copy the CSV below.</p>
+        <textarea class="csvbox" id="csv-text" readonly aria-label="CSV export"></textarea>
+      </div>
+      <div class="tablewrap" id="log-table"></div>
+    </section>
+
+    <section id="s-stats" class="stack" hidden>
+      <div class="page-head"><h1>Stats</h1><p>Read from your attempt log. Use it to see where a level is too easy or too hard.</p></div>
+      <div id="stats-body" class="stack"></div>
+    </section>
+  </main>
+</div>
+
+<div class="sheet" id="result" hidden></div>
