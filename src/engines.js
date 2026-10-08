@@ -1,4 +1,4 @@
-/* Puzzle Triathlon engines: seeded generators and solvers for nine puzzle types.
+/* Puzzle Triathlon engines: seeded generators and solvers for ten puzzle types (including Cross Math).
    Runs in the page, in a Web Worker, and in Node (for tests). */
 (function (root) {
 'use strict';
