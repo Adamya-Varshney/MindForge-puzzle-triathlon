@@ -205,11 +205,22 @@ main { min-width: 0; }
 .sq-box.wrong { border-color: var(--bad); color: var(--bad); background: var(--bad-soft); text-decoration: line-through; }
 .sq-box.given { border-style: solid; background: var(--good-soft); border-color: var(--good); color: var(--good); }
 
-/* number path (shares the maze grid) */
-.maze.np .cell { font: 700 clamp(12px, calc(30cqw / var(--c)), 22px)/1 var(--f-mono); }
-.maze.np .cell.fixed { background: var(--inset); border-color: transparent; color: var(--ink); }
-.maze.np .cell.fixed.on, .maze.np .cell.fixed.head { box-shadow: inset 0 0 0 3px var(--t); }
-.maze.np .cell.wrong { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
+/* number path */
+.npg { position: relative; display: grid; grid-template-columns: repeat(var(--c), minmax(0, 1fr)); border: 2.5px solid var(--line-strong); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.npg .cell { font: 700 clamp(11px, calc(32cqw / var(--c)), 22px)/1 var(--f-mono); color: var(--t-text); }
+.npg .cell .v { position: relative; z-index: 2; }
+.npg .cell.fixed { background: var(--inset); color: var(--ink); font-weight: 800; }
+.npg .cell.linked:not(.fixed) { background: color-mix(in oklab, var(--t) 10%, var(--surface)); }
+.npg .cell.done:not(.fixed) { background: var(--t-soft); }
+.npg .cell.sel { box-shadow: inset 0 0 0 3px var(--t); z-index: 3; }
+.npg .cell.clash .v { color: var(--bad); text-decoration: underline wavy; text-underline-offset: 3px; }
+.npg .cell.wrong { background: var(--bad-soft); }
+.npg .cell.wrong .v { color: var(--bad); text-decoration: line-through; }
+.npg svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+.npg svg path { fill: none; stroke: var(--t); stroke-width: .16; stroke-linecap: round; opacity: .38; }
+.np-quick { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; min-height: 44px; }
+.np-qlabel { font-size: 13px; color: var(--ink-3); }
+.pad .btn.quick { background: var(--t-soft); border-color: var(--t); color: var(--t-text); }
 
 /* pattern matrix */
 .pm { display: grid; gap: 16px; max-width: 460px; margin-inline: auto; width: 100%; }

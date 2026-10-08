@@ -1066,78 +1066,121 @@ function genCrossmath(level, rng) {
 function sqRand(rng, lo, hi) { return lo + ri(rng, hi - lo + 1); }
 function sqStep(d) { return d > 0 ? 'add ' + d : 'subtract ' + (-d); }
 function sqNonZero(rng, lo, hi) { var v = 0; while (!v) v = sqRand(rng, lo, hi); return v; }
+var SQ_PRIMES = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+function sqDigitSum(x) { x = Math.abs(x); var s = 0; while (x) { s += x % 10; x = Math.floor(x / 10); } return s; }
+function sqIter(first, step) { return function (i) { var t = first.slice(); while (t.length <= i) t.push(step(t, t.length)); return t[i]; }; }
+var SQ_CLUE = {
+  gaps: 'Write down the gaps between neighbouring terms and look for a pattern in them.',
+  gaps2: 'Look at the gaps between terms, then at the gaps between those gaps.',
+  prev: 'Each term is built from the terms just before it.',
+  ops: 'Two different operations take turns.',
+  every: 'Look at every other term on its own.',
+  power: 'Think about powers of whole numbers.',
+  digits: 'Each term comes from the one before it, using its digits.'
+};
 var SQ_FAMS = {
-  arith: function (rng, big, small) {
-    var a = small ? sqRand(rng, 1, 15) : sqRand(rng, big ? -30 : -5, big ? 80 : 30), d = small ? sqRand(rng, 2, 6) : sqNonZero(rng, big ? -15 : -9, big ? 15 : 9);
-    return { f: function (i) { return a + i * d; }, desc: (d > 0 ? 'Add ' + d : 'Subtract ' + (-d)) + ' each time.' };
-  },
-  geom: function (rng, big) {
-    var a = sqRand(rng, 1, big ? 7 : 4), r = sqRand(rng, 2, big ? 4 : 3);
-    return { f: function (i) { return a * Math.pow(r, i); }, desc: 'Multiply by ' + r + ' each time.' };
-  },
   alt: function (rng, big) {
-    var a = sqRand(rng, 1, 20), d1 = sqNonZero(rng, -9, big ? 15 : 9), d2 = sqNonZero(rng, -9, big ? 15 : 9);
-    while (d2 === d1) d2 = sqNonZero(rng, -9, 9);
-    return { f: function (i) { var k = Math.floor(i / 2); return a + k * (d1 + d2) + (i % 2 ? d1 : 0); }, desc: 'Alternately ' + sqStep(d1) + ' and ' + sqStep(d2) + '.' };
-  },
-  squares: function (rng, big) {
-    var k = sqRand(rng, 1, big ? 9 : 5), c = big ? sqRand(rng, -6, 6) : 0;
-    return { f: function (i) { return (i + k) * (i + k) + c; }, desc: 'Square numbers (' + (k * k) + ', ' + ((k + 1) * (k + 1)) + ', ' + ((k + 2) * (k + 2)) + ' and so on)' + (c ? (c > 0 ? ' plus ' + c : ' minus ' + (-c)) : '') + '.' };
+    var a = sqRand(rng, 1, 40), d1 = sqNonZero(rng, -12, big ? 25 : 15), d2 = sqNonZero(rng, -12, big ? 25 : 15);
+    while (d2 === d1 || d2 === -d1) d2 = sqNonZero(rng, -12, 15);
+    return { f: function (i) { var k = Math.floor(i / 2); return a + k * (d1 + d2) + (i % 2 ? d1 : 0); }, desc: 'Alternately ' + sqStep(d1) + ' and ' + sqStep(d2) + '.', clue: 'gaps' };
   },
   quad: function (rng, big) {
-    var a = sqRand(rng, 1, 20), b = sqRand(rng, big ? -6 : 1, 6), c = sqNonZero(rng, big ? -4 : 1, big ? 5 : 3);
-    return { f: function (i) { return a + b * i + c * i * (i - 1) / 2; }, desc: 'The gaps between terms change by ' + c + ' each time.' };
+    var a = sqRand(rng, 1, 40), b = sqRand(rng, -8, 8), c = sqNonZero(rng, -6, big ? 9 : 6); if (Math.abs(c) < 2) c = 3;
+    return { f: function (i) { return a + b * i + c * i * (i - 1) / 2; }, desc: 'The gaps between terms change by ' + c + ' each time.', clue: 'gaps' };
   },
   affine: function (rng, big) {
-    var s = sqRand(rng, 1, 6), m = sqRand(rng, 2, big ? 3 : 2), c = sqNonZero(rng, -5, 5);
-    return { f: function (i) { var x = s; for (var k = 0; k < i; k++) x = m * x + c; return x; }, desc: 'Multiply by ' + m + ', then ' + (c > 0 ? 'add ' + c : 'subtract ' + (-c)) + '.' };
-  },
-  fib: function (rng, big) {
-    var a = sqRand(rng, 1, big ? 12 : 6), b = sqRand(rng, 1, big ? 12 : 6);
-    return { f: function (i) { var x = a, y = b; for (var k = 0; k < i; k++) { var t = x + y; x = y; y = t; } return x; }, desc: 'Each term is the sum of the two before it.' };
+    var s = sqRand(rng, 2, 9), m = sqRand(rng, 2, 3), c = sqNonZero(rng, -9, 9);
+    return { f: sqIter([s], function (t) { return m * t[t.length - 1] + c; }), desc: 'Multiply by ' + m + ', then ' + sqStep(c) + '.', clue: 'prev' };
   },
   inter: function (rng, big) {
-    var a = sqRand(rng, 1, 20), d1 = sqNonZero(rng, -6, big ? 12 : 7), b = sqRand(rng, 1, 30), d2 = sqNonZero(rng, -6, big ? 12 : 7);
-    while (d2 === d1) d2 = sqNonZero(rng, -6, 7);
-    return { f: function (i) { var k = Math.floor(i / 2); return i % 2 ? b + k * d2 : a + k * d1; }, desc: 'Two sequences take turns: in one you ' + sqStep(d1) + ', in the other you ' + sqStep(d2) + '.' };
+    var a = sqRand(rng, 1, 40), d1 = sqNonZero(rng, -9, big ? 19 : 12), b = sqRand(rng, 1, 60), d2 = sqNonZero(rng, -9, big ? 19 : 12);
+    while (d2 === d1) d2 = sqNonZero(rng, -9, 12);
+    return { f: function (i) { var k = Math.floor(i / 2); return i % 2 ? b + k * d2 : a + k * d1; }, desc: 'Two sequences take turns: in one you ' + sqStep(d1) + ', in the other you ' + sqStep(d2) + '.', clue: 'every' };
   },
   diffgeom: function (rng, big) {
-    var a = sqRand(rng, 1, 12), d = sqRand(rng, 1, big ? 5 : 3), r = sqRand(rng, 2, big ? 3 : 2);
-    return { f: function (i) { var x = a, g = d; for (var k = 0; k < i; k++) { x += g; g *= r; } return x; }, desc: 'The gaps between terms multiply by ' + r + ' each time.' };
+    var a = sqRand(rng, 1, 30), d = sqRand(rng, 1, big ? 7 : 5), r = sqRand(rng, 2, 3);
+    return { f: function (i) { var x = a, g = d; for (var k = 0; k < i; k++) { x += g; g *= r; } return x; }, desc: 'The gaps between terms multiply by ' + r + ' each time.', clue: 'gaps' };
+  },
+  fibc: function (rng, big) {
+    var a = sqRand(rng, 1, big ? 20 : 12), b = sqRand(rng, 1, big ? 20 : 12), c = rng() < 0.6 ? sqNonZero(rng, -4, 5) : 0;
+    return { f: sqIter([a, b], function (t) { return t[t.length - 1] + t[t.length - 2] + c; }), desc: 'Each term is the sum of the two before it' + (c ? ', then ' + sqStep(c) : '') + '.', clue: 'prev' };
+  },
+  interMix: function (rng, big) {
+    var a = sqRand(rng, 1, 30), d = sqNonZero(rng, -9, big ? 15 : 9), b = sqRand(rng, 1, 5), r = sqRand(rng, 2, 3);
+    var geomFirst = rng() < 0.5;
+    return { f: function (i) { var k = Math.floor(i / 2), g = (i % 2 === 0) === geomFirst; return g ? b * Math.pow(r, k) : a + k * d; }, desc: 'Two sequences take turns: one multiplies by ' + r + ', the other ' + (d > 0 ? 'adds ' + d : 'subtracts ' + (-d)) + '.', clue: 'every' };
+  },
+  diffFib: function (rng, big) {
+    var a = sqRand(rng, 1, 30), g0 = sqRand(rng, 1, big ? 9 : 6), g1 = sqRand(rng, 1, big ? 9 : 6);
+    return { f: function (i) { var x = a, p = g0, q = g1; for (var k = 0; k < i; k++) { x += p; var t = p + q; p = q; q = t; } return x; }, desc: 'Each gap between terms is the sum of the two gaps before it.', clue: 'gaps' };
+  },
+  diffPrimes: function (rng) {
+    var a = sqRand(rng, 1, 40), j = sqRand(rng, 0, 6);
+    return { f: function (i) { var x = a; for (var k = 0; k < i; k++) x += SQ_PRIMES[j + k]; return x; }, desc: 'The gaps between terms are the prime numbers in order, starting at ' + SQ_PRIMES[j] + '.', clue: 'gaps' };
+  },
+  diffSquares: function (rng) {
+    var a = sqRand(rng, 1, 30), k0 = sqRand(rng, 1, 7);
+    return { f: function (i) { var x = a; for (var k = 0; k < i; k++) x += (k0 + k) * (k0 + k); return x; }, desc: 'The gaps between terms are square numbers in order, starting at ' + (k0 * k0) + '.', clue: 'gaps' };
+  },
+  secondGeom: function (rng, big) {
+    var a = sqRand(rng, 1, 30), g = sqRand(rng, 1, 6), hh = sqRand(rng, 1, big ? 4 : 3), r = sqRand(rng, 2, 3);
+    return { f: function (i) { var x = a, gap = g, inc = hh; for (var k = 0; k < i; k++) { x += gap; gap += inc; inc *= r; } return x; }, desc: 'The gaps grow, and the amount they grow by multiplies by ' + r + ' each time.', clue: 'gaps2' };
   },
   cubes: function (rng, big) {
-    var k = sqRand(rng, 1, big ? 6 : 3), c = big ? sqRand(rng, -5, 5) : 0;
-    return { f: function (i) { return Math.pow(i + k, 3) + c; }, desc: 'Cube numbers (n × n × n)' + (c ? (c > 0 ? ' plus ' + c : ' minus ' + (-c)) : '') + '.' };
+    var k = sqRand(rng, 1, big ? 7 : 5), c = sqRand(rng, -9, 9), neg = big && rng() < 0.4;
+    return { f: function (i) { var v = Math.pow(i + k, 3) + c; return neg && i % 2 ? -v : v; }, desc: 'Cube numbers (' + Math.pow(k, 3) + ', ' + Math.pow(k + 1, 3) + ', ' + Math.pow(k + 2, 3) + ' and so on)' + (c ? (c > 0 ? ' plus ' + c : ' minus ' + (-c)) : '') + (neg ? ', with every second term made negative' : '') + '.', clue: 'power' };
   },
-  tri: function (rng) {
-    var a = sqRand(rng, 0, 4), b = sqRand(rng, 1, 4), c = sqRand(rng, 1, 5);
-    return { f: function (i) { var t = [a, b, c]; while (t.length <= i) t.push(t[t.length - 1] + t[t.length - 2] + t[t.length - 3]); return t[i]; }, desc: 'Each term is the sum of the three before it.' };
+  tri: function (rng, big) {
+    var a = sqRand(rng, 0, big ? 9 : 5), b = sqRand(rng, 1, big ? 9 : 5), c = sqRand(rng, 1, big ? 9 : 6);
+    return { f: sqIter([a, b, c], function (t) { var n = t.length; return t[n - 1] + t[n - 2] + t[n - 3]; }), desc: 'Each term is the sum of the three before it.', clue: 'prev' };
   },
   altops: function (rng, big) {
-    var s = sqRand(rng, 1, 9), m = sqRand(rng, 2, big ? 3 : 2), c = sqNonZero(rng, -7, 9);
-    return { f: function (i) { var x = s; for (var k = 0; k < i; k++) x = k % 2 ? x + c : x * m; return x; }, desc: 'Multiply by ' + m + ', then ' + (c > 0 ? 'add ' + c : 'subtract ' + (-c)) + ', and repeat.' };
+    var s = sqRand(rng, 1, 9), m = sqRand(rng, 2, 3), c = sqNonZero(rng, -9, 12);
+    return { f: sqIter([s], function (t, n) { var x = t[n - 1]; return (n - 1) % 2 ? x + c : x * m; }), desc: 'Multiply by ' + m + ', then ' + sqStep(c) + ', and repeat.', clue: 'ops' };
   },
-  posmult: function (rng) {
-    var s = sqRand(rng, 1, 3), m0 = sqRand(rng, 1, 2);
-    return { f: function (i) { var x = s; for (var k = 0; k < i; k++) x *= (m0 + k); return x; }, desc: 'Multiply by ' + m0 + ', then ' + (m0 + 1) + ', then ' + (m0 + 2) + ', and so on.' };
+  growOps: function (rng, big) {
+    var s = sqRand(rng, 1, 6), m0 = 2, c0 = sqRand(rng, 1, 4), mulFirst = rng() < 0.6;
+    return { f: sqIter([s], function (t, n) { var x = t[n - 1], k = n - 1, half = Math.floor(k / 2), mul = (k % 2 === 0) === mulFirst; return mul ? x * (m0 + half) : x + (c0 + half); }), desc: 'Operations take turns: multiply by 2, 3, 4… and add ' + c0 + ', ' + (c0 + 1) + ', ' + (c0 + 2) + '…', clue: 'ops' };
+  },
+  lin2: function (rng, big) {
+    var p = pick(rng, [2, 3]), q = pick(rng, [1, -1, 2]), a = sqRand(rng, 1, big ? 9 : 6), b = sqRand(rng, 1, big ? 9 : 6);
+    return { f: sqIter([a, b], function (t) { var n = t.length; return p * t[n - 1] + q * t[n - 2]; }), desc: 'Each term is ' + p + ' times the previous term ' + (q > 0 ? 'plus ' + (q === 1 ? '' : q + ' times ') : 'minus ') + 'the term before that.', clue: 'prev' };
+  },
+  posAffine: function (rng, big) {
+    var s = sqRand(rng, 1, 6), m = sqRand(rng, 2, big ? 3 : 2), sg = rng() < 0.5 ? 1 : -1;
+    return { f: sqIter([s], function (t, n) { return m * t[n - 1] + sg * n; }), desc: 'Multiply by ' + m + ', then ' + (sg > 0 ? 'add' : 'subtract') + ' the position of the new term (1, 2, 3…).', clue: 'prev' };
+  },
+  prodPrev: function (rng) {
+    var a = sqRand(rng, 1, 3), b = sqRand(rng, 2, 4), c = pick(rng, [-1, 1, 2, 3]);
+    return { f: sqIter([a, b], function (t) { var n = t.length; return t[n - 1] * t[n - 2] + c; }), desc: 'Multiply the two previous terms, then ' + sqStep(c) + '.', clue: 'prev' };
+  },
+  digitSum: function (rng) {
+    var s = sqRand(rng, 11, 199), twice = rng() < 0.4;
+    return { f: sqIter([s], function (t) { var x = t[t.length - 1]; return x + (twice ? 2 : 1) * sqDigitSum(x); }), desc: 'Add ' + (twice ? 'twice ' : '') + 'the sum of the digits of the previous term.', clue: 'digits' };
   }
 };
+/* Rules a solver spots at a glance. A puzzle is rejected if one of these also explains it,
+   unless that simple rule is the family's own rule. */
+var SQ_SIMPLE = ['poly1', 'geom', 'poly2', 'alt', 'inter', 'gaps:poly1', 'gaps:geom', 'gaps:alt'];
+var SQ_ALLOW = { alt: ['alt', 'inter', 'gaps:alt'], quad: ['poly2', 'gaps:poly1', 'gaps:alt'], inter: ['inter', 'alt'], interMix: ['inter'], diffgeom: ['gaps:geom'], affine: ['gaps:geom'] };
+var SQ_HARD = ['fibc', 'interMix', 'diffFib', 'tri', 'lin2', 'posAffine', 'diffSquares', 'diffPrimes', 'secondGeom', 'growOps', 'prodPrev', 'digitSum', 'altops', 'cubes'];
 var SQ_LEVELS = [
-  { fams: ['arith'], shown: 5, ans: 1, small: true }, { fams: ['arith', 'geom'], shown: 5, ans: 1 },
-  { fams: ['alt', 'geom', 'squares'], shown: 6, ans: 1 }, { fams: ['quad', 'affine', 'squares'], shown: 6, ans: 1 },
-  { fams: ['fib', 'inter', 'quad'], shown: 6, ans: 1 }, { fams: ['affine', 'diffgeom', 'cubes', 'inter'], shown: 6, ans: 1 },
-  { fams: ['tri', 'altops', 'diffgeom', 'fib'], shown: 7, ans: 1 }, { fams: ['altops', 'posmult', 'tri', 'inter'], shown: 7, ans: 1, big: true },
-  { fams: ['quad', 'affine', 'fib', 'diffgeom', 'cubes', 'tri', 'altops', 'inter'], shown: 6, ans: 2 },
-  { fams: ['quad', 'affine', 'fib', 'diffgeom', 'cubes', 'tri', 'altops', 'inter', 'posmult'], shown: 6, ans: 2, big: true }
+  { fams: ['alt', 'quad', 'affine', 'inter', 'diffgeom'], shown: 6, ans: 1 },
+  { fams: ['fibc', 'interMix', 'diffFib', 'cubes', 'altops'], shown: 6, ans: 1 },
+  { fams: ['tri', 'lin2', 'posAffine', 'diffSquares', 'diffPrimes'], shown: 6, ans: 1 },
+  { fams: ['secondGeom', 'growOps', 'prodPrev', 'digitSum', 'lin2'], shown: 6, ans: 1 },
+  { fams: SQ_HARD, shown: 6, ans: 2 }, { fams: SQ_HARD, shown: 6, ans: 2, big: true },
+  { fams: SQ_HARD, shown: 5, ans: 2 }, { fams: SQ_HARD, shown: 5, ans: 2, big: true },
+  { fams: SQ_HARD, shown: 6, ans: 3, big: true }, { fams: SQ_HARD, shown: 5, ans: 3, big: true }
 ];
-/* Every simple rule that fits the shown terms, with its predictions for the next k terms. */
-function sqFits(s, k) {
-  var out = [], m = s.length, i, j;
-  function push(name, pred) { if (pred) out.push({ name: name, pred: pred }); }
+/* Base rule fitters: each returns predictions for the next k terms, or nothing if the rule does not fit. */
+function sqBase(s, k, deep) {
+  var out = [], m = s.length, i;
+  function push(name, pred) { if (pred && pred.every(function (v) { return isFinite(v) && Math.abs(v) < 1e12; })) out.push({ name: name, pred: pred }); }
   for (var ord = 1; ord <= 3; ord++) {
     if (m < ord + 2) continue;
-    var rows = [s.slice()];
-    for (j = 0; j < ord; j++) { var p = rows[j], d = []; for (i = 1; i < p.length; i++) d.push(p[i] - p[i - 1]); rows.push(d); }
+    var rows = [s.slice()], j;
+    for (j = 0; j < ord; j++) { var pr0 = rows[j], d = []; for (i = 1; i < pr0.length; i++) d.push(pr0[i] - pr0[i - 1]); rows.push(d); }
     var last = rows[ord], ok = true; for (i = 1; i < last.length; i++) if (last[i] !== last[0]) ok = false;
     if (!ok) continue;
     var tails = rows.map(function (r) { return r[r.length - 1]; }), pred = [];
@@ -1145,33 +1188,26 @@ function sqFits(s, k) {
     push('poly' + ord, pred);
   }
   (function () {
-    for (i = 0; i < m; i++) if (!s[i]) return;
-    if (s[1] % s[0]) return; var r = s[1] / s[0];
+    if (m < 3) return; for (i = 0; i < m; i++) if (!s[i]) return;
+    if (s[1] % s[0]) return; var r = s[1] / s[0]; if (Math.abs(r) < 2) return;
     for (i = 1; i < m; i++) if (s[i] !== s[i - 1] * r) return;
     var pr = [], x = s[m - 1]; for (var t = 0; t < k; t++) { x *= r; pr.push(x); } push('geom', pr);
   })();
   (function () {
-    if (m < 5) return; var d = []; for (i = 1; i < m; i++) d.push(s[i] - s[i - 1]);
-    for (i = 2; i < d.length; i++) if (d[i] !== d[i - 2]) return;
-    var pr = [], x = s[m - 1]; for (t = 0; t < k; t++) { x += d[(m - 1 + t) % 2]; pr.push(x); } push('alt', pr);
-  })();
-  (function () {
-    if (m < 6) return;
-    var e = [], o = []; for (i = 0; i < m; i++) (i % 2 ? o : e).push(s[i]);
-    var de = e[1] - e[0], dO = o[1] - o[0];
-    for (i = 2; i < e.length; i++) if (e[i] - e[i - 1] !== de) return;
-    for (i = 2; i < o.length; i++) if (o[i] - o[i - 1] !== dO) return;
-    var pr = []; for (var t = 0; t < k; t++) { var idx = m + t, half = Math.floor(idx / 2); pr.push(idx % 2 ? o[0] + half * dO : e[0] + half * de); } push('inter', pr);
-  })();
-  (function () {
     if (m < 5) return;
-    for (var p = -4; p <= 4; p++) for (var q = -3; q <= 3; q++) {
-      var r = s[2] - p * s[1] - q * s[0], ok2 = true;
-      for (i = 3; i < m; i++) if (s[i] !== p * s[i - 1] + q * s[i - 2] + r) { ok2 = false; break; }
+    for (var p = -3; p <= 3; p++) for (var q = -3; q <= 3; q++) for (var sl = -4; sl <= 4; sl++) {
+      if (!deep && sl) continue;
+      var r = s[2] - p * s[1] - q * s[0] - sl * 2, ok2 = true;
+      for (i = 3; i < m; i++) if (s[i] !== p * s[i - 1] + q * s[i - 2] + sl * i + r) { ok2 = false; break; }
       if (!ok2) continue;
-      var a = s[m - 2], b = s[m - 1], pr = []; for (var t = 0; t < k; t++) { var c = p * b + q * a + r; pr.push(c); a = b; b = c; }
+      var a = s[m - 2], b = s[m - 1], pr = []; for (var t = 0; t < k; t++) { var c = p * b + q * a + sl * (m + t) + r; pr.push(c); a = b; b = c; }
       push('lin2', pr);
     }
+  })();
+  (function () {
+    if (m < 5) return; var d = []; for (i = 1; i < m; i++) d.push(s[i] - s[i - 1]);
+    for (i = 2; i < d.length; i++) if (d[i] !== d[i - 2]) return;
+    var pr = [], x = s[m - 1]; for (var t = 0; t < k; t++) { x += d[(m - 1 + t) % 2]; pr.push(x); } push('alt', pr);
   })();
   (function () {
     if (m < 5) return;
@@ -1179,50 +1215,103 @@ function sqFits(s, k) {
     var t3 = s.slice(m - 3), pr = []; for (var t = 0; t < k; t++) { var c = t3[0] + t3[1] + t3[2]; pr.push(c); t3 = [t3[1], t3[2], c]; } push('tri', pr);
   })();
   (function () {
-    if (m < 5) return; var d = []; for (i = 1; i < m; i++) d.push(s[i] - s[i - 1]);
-    for (i = 0; i < d.length; i++) if (!d[i]) return;
-    if (d[1] % d[0]) return; var r = d[1] / d[0]; if (Math.abs(r) < 2) return;
-    for (i = 1; i < d.length; i++) if (d[i] !== d[i - 1] * r) return;
-    var pr = [], x = s[m - 1], g = d[d.length - 1]; for (var t = 0; t < k; t++) { g *= r; x += g; pr.push(x); } push('diffgeom', pr);
-  })();
-  (function () {
-    if (m < 5) return;
-    for (var ph = 0; ph < 2; ph++) {
-      var mm = null, cc = null, ok3 = true;
-      for (i = 1; i < m && ok3; i++) {
-        var mul = (i - 1) % 2 === ph;
-        if (mul) { if (!s[i - 1] || s[i] % s[i - 1]) { ok3 = false; break; } var rr = s[i] / s[i - 1]; if (mm === null) mm = rr; else if (rr !== mm) ok3 = false; }
-        else { var dd = s[i] - s[i - 1]; if (cc === null) cc = dd; else if (dd !== cc) ok3 = false; }
-      }
-      if (!ok3 || mm === null || cc === null || Math.abs(mm) < 2) continue;
-      var pr = [], x = s[m - 1]; for (var t = 0; t < k; t++) { var st = m - 1 + t; x = (st % 2 === ph) ? x * mm : x + cc; pr.push(x); } push('altops', pr);
+    if (m < 4 || !deep) return;
+    for (var c = -6; c <= 6; c++) {
+      var ok3 = true; for (i = 2; i < m; i++) if (s[i] !== s[i - 1] * s[i - 2] + c) { ok3 = false; break; }
+      if (!ok3) continue;
+      var a = s[m - 2], b = s[m - 1], pr = []; for (var t = 0; t < k; t++) { var v = a * b + c; pr.push(v); a = b; b = v; } push('prod', pr);
     }
   })();
   (function () {
-    if (m < 5) return; var rs = [];
+    if (m < 3 || !deep) return;
+    for (var mult = 1; mult <= 2; mult++) {
+      var ok4 = true; for (i = 1; i < m; i++) if (s[i] !== s[i - 1] + mult * sqDigitSum(s[i - 1])) { ok4 = false; break; }
+      if (!ok4) continue;
+      var x = s[m - 1], pr = []; for (var t = 0; t < k; t++) { x += mult * sqDigitSum(x); pr.push(x); } push('digits', pr);
+    }
+  })();
+  (function () {
+    if (m < 4) return; var j0 = SQ_PRIMES.indexOf(s[0]); if (j0 < 0) return;
+    for (i = 1; i < m; i++) if (SQ_PRIMES[j0 + i] !== s[i]) return;
+    var pr = []; for (var t = 0; t < k; t++) pr.push(SQ_PRIMES[j0 + m + t]); push('primes', pr);
+  })();
+  (function () {
+    /* two operations take turns (multiply / add); their amounts may each step by a constant */
+    if (m < 5 || !deep) return;
+    for (var ph = 0; ph < 2; ph++) {
+      var mulv = [], addv = [], ok5 = true;
+      for (i = 1; i < m; i++) {
+        if ((i - 1) % 2 === ph) { if (!s[i - 1] || s[i] % s[i - 1]) { ok5 = false; break; } mulv.push(s[i] / s[i - 1]); }
+        else addv.push(s[i] - s[i - 1]);
+      }
+      if (!ok5 || mulv.length < 2 || addv.length < 1) continue;
+      if (mulv.some(function (v) { return Math.abs(v) < 2; })) continue;
+      var dm = mulv[1] - mulv[0]; if (dm !== 0 && dm !== 1) continue;
+      var okm = true; for (i = 2; i < mulv.length; i++) if (mulv[i] - mulv[i - 1] !== dm) okm = false;
+      var da = addv.length > 1 ? addv[1] - addv[0] : 0, oka = true; for (i = 2; i < addv.length; i++) if (addv[i] - addv[i - 1] !== da) oka = false;
+      if (!okm || !oka || (addv.length < 2 && dm)) continue;
+      var nm = mulv[mulv.length - 1], na = addv[addv.length - 1], x = s[m - 1], pr = [];
+      for (var t = 0; t < k; t++) { var st = m - 1 + t; if (st % 2 === ph) { nm += dm; x *= nm; } else { na += da; x += na; } pr.push(x); }
+      push('ops', pr);
+    }
+  })();
+  (function () {
+    if (m < 4 || !deep) return; var rs = [];
     for (i = 1; i < m; i++) { if (!s[i - 1] || s[i] % s[i - 1]) return; rs.push(s[i] / s[i - 1]); }
     for (i = 1; i < rs.length; i++) if (rs[i] !== rs[i - 1] + 1) return;
     var pr = [], x = s[m - 1], r = rs[rs.length - 1]; for (var t = 0; t < k; t++) { r++; x *= r; pr.push(x); } push('posmult', pr);
   })();
   return out;
 }
+/* Every rule we know that fits the shown terms: base rules, rules on the gaps (and the gaps of the gaps),
+   and two interleaved sequences, each with its predictions for the next k terms. */
+function sqFits(s, k) {
+  var out = sqBase(s, k, true), m = s.length, i;
+  function lift(seq, fits) { return fits.map(function (f) { var x = seq[seq.length - 1], pr = []; f.pred.forEach(function (d) { x += d; pr.push(x); }); return { name: 'gaps:' + f.name, pred: pr }; }); }
+  var d1 = []; for (i = 1; i < m; i++) d1.push(s[i] - s[i - 1]);
+  out = out.concat(lift(s, sqBase(d1, k, false)));
+  var d2 = []; for (i = 1; i < d1.length; i++) d2.push(d1[i] - d1[i - 1]);
+  lift(d1, sqBase(d2, k, false)).forEach(function (f) { out = out.concat(lift(s, [{ name: f.name, pred: f.pred }])); });
+  (function () {
+    /* signs alternate: fit the sizes, then restore the signs */
+    for (i = 0; i < m; i++) if (!s[i]) return;
+    for (i = 1; i < m; i++) if ((s[i] > 0) === (s[i - 1] > 0)) return;
+    var mag = s.map(Math.abs), sg = s[m - 1] > 0 ? -1 : 1;
+    sqBase(mag, k, false).forEach(function (f) { out.push({ name: 'signs:' + f.name, pred: f.pred.map(function (v, t) { return v * (t % 2 ? -sg : sg); }) }); });
+  })();
+  if (m >= 5) {
+    var ev = [], od = []; for (i = 0; i < m; i++) (i % 2 ? od : ev).push(s[i]);
+    var need = function (sub, n) { return sqBase(sub, n, false).filter(function (f) { return f.name === 'poly1' || f.name === 'geom' || f.name === 'poly2'; }); };
+    var ne = 0, no = 0; for (i = m; i < m + k; i++) { if (i % 2) no++; else ne++; }
+    var fe = ne ? need(ev, ne) : [{ pred: [] }], fo = no ? need(od, no) : [{ pred: [] }];
+    if (ev.length >= 3 && od.length >= 3) fe.forEach(function (a) { fo.forEach(function (b) {
+      var pr = [], ie = 0, io = 0; for (var t = m; t < m + k; t++) pr.push(t % 2 ? b.pred[io++] : a.pred[ie++]);
+      out.push({ name: 'inter', pred: pr });
+    }); });
+  }
+  return out;
+}
 function genSequence(level, rng) {
-  var P = SQ_LEVELS[level - 1], total = P.shown + P.ans, out = null, fam, rule, terms;
-  for (var attempt = 0; attempt < 400 && !out; attempt++) {
-    fam = pick(rng, P.fams); rule = SQ_FAMS[fam](rng, !!P.big, !!P.small);
+  var P = SQ_LEVELS[level - 1], total = P.shown + P.ans, out = null, fam, rule, terms, tried = 0;
+  for (var attempt = 0; attempt < 3000 && !out; attempt++) {
+    fam = pick(rng, P.fams); if (P.shown < 6 && (fam === 'inter' || fam === 'interMix')) continue;
+    rule = SQ_FAMS[fam](rng, !!P.big);
     terms = []; for (var i = 0; i < total; i++) terms.push(rule.f(i));
-    if (terms.some(function (v) { return Math.abs(v) > 99999 || !isFinite(v); })) continue;
-    var uniq = {}; terms.forEach(function (v) { uniq[v] = 1; }); if (Object.keys(uniq).length < Math.min(total, 4)) continue;
+    if (terms.some(function (v) { return Math.abs(v) > (P.ans > 1 ? 99999 : 999999) || !isFinite(v) || v !== Math.round(v); })) continue;
+    var uniq = {}; terms.forEach(function (v) { uniq[v] = 1; }); if (Object.keys(uniq).length < total - 1) continue;
+    tried++;
     var shown = terms.slice(0, P.shown), ans = terms.slice(P.shown), fits = sqFits(shown, P.ans);
     if (!fits.length) continue;
-    var same = fits.every(function (f) { return f.pred.join(',') === ans.join(','); });
-    if (same) out = { shown: shown, ans: ans, desc: rule.desc, fam: fam, fits: fits.length };
+    if (fits.some(function (f) { return f.pred.join(',') !== ans.join(','); })) continue;
+    var allow = SQ_ALLOW[fam] || [];
+    if (fits.some(function (f) { return SQ_SIMPLE.indexOf(f.name) >= 0 && allow.indexOf(f.name) < 0; })) continue;
+    out = { shown: shown, ans: ans, desc: rule.desc, clue: SQ_CLUE[rule.clue], fam: fam, fits: fits.length };
   }
-  if (!out) { out = { shown: [2, 4, 6, 8, 10], ans: [12].concat(P.ans > 1 ? [14] : []), desc: 'Add 2 each time.', fam: 'arith', fits: 1 }; }
+  if (!out) { out = { shown: [3, 4, 7, 11, 18, 29], ans: [47, 76, 123].slice(0, P.ans), desc: 'Each term is the sum of the two before it.', clue: SQ_CLUE.prev, fam: 'fibc', fits: 1 }; }
   return {
-    params: { family: out.fam, shown_terms: P.shown, answers: P.ans },
-    puzzle: { shown: out.shown, answers: out.ans, rule: out.desc },
-    difficulty: level, difficulty_label: 'rule family: ' + out.fam, optimal: null
+    params: { family: out.fam, shown_terms: P.shown, answers: P.ans, rule_checks_passed: out.fits },
+    puzzle: { shown: out.shown, answers: out.ans, rule: out.desc, clue: out.clue },
+    difficulty: level, difficulty_label: 'rule family: ' + out.fam + ', ' + P.shown + ' shown, ' + P.ans + ' to find', optimal: null
   };
 }
 
@@ -1249,55 +1338,102 @@ function npPath(R, C, rng) {
   }
   return path;
 }
-/* Counts solutions up to `limit`; givens[cell] = number or 0. Number 1 must be given. */
+/* Counts solutions up to `limit`; givens[cell] = number or 0. At least one number must be given.
+   Grows the path up from the smallest given number to N, then down to 1, pruning on distance to the
+   next fixed number, cells that could not have two path neighbours, and cut-off regions. */
 function npCount(R, C, givens, limit, cap) {
-  var N = R * C, pos = new Array(N + 2).fill(-1), val = givens.slice(), i, k;
-  for (i = 0; i < N; i++) if (givens[i]) pos[givens[i]] = i;
+  var N = R * C, pos = new Array(N + 2).fill(-1), val = givens.slice(), i, k, nb = [];
+  for (i = 0; i < N; i++) { if (givens[i]) pos[givens[i]] = i; nb.push(npNbrs(R, C, i)); }
+  var gmin = 0; for (k = 1; k <= N; k++) if (pos[k] >= 0) { gmin = k; break; }
+  if (!gmin) return { count: 0, over: true, nodes: 0 };
   var nextG = new Array(N + 2).fill(0);
   for (k = N; k >= 1; k--) nextG[k] = pos[k] >= 0 ? k : (k < N ? nextG[k + 1] : 0);
-  var count = 0, nodes = 0, over = false;
-  function rec(k, cell) {
-    if (k === N) { count++; return count >= limit; }
+  var count = 0, nodes = 0, over = false, seen = new Int32Array(N), stamp = 0, queue = new Int32Array(N);
+  var lowCell = pos[gmin];
+  /* phase: 'up' while placing gmin+1..N (head = upper end), 'down' while placing gmin-1..1 */
+  function feasible(k, head, up) {
+    var ends = 0, empty = 0, q, j, c, a;
+    if (up && pos[N] < 0) ends++;
+    if (gmin > 1) ends++;
+    for (c = 0; c < N; c++) {
+      if (val[c]) continue;
+      empty++; a = 0;
+      for (j = 0; j < nb[c].length; j++) {
+        q = nb[c][j];
+        if (!val[q] || q === head || (up && val[q] > k) || (up && q === lowCell && gmin > 1)) a++;
+      }
+      if (a === 0) return false;
+      if (a === 1 && --ends < 0) return false;
+    }
+    if (!empty) return true;
+    stamp++; var qh = 0, qt = 0;
+    var seeds = [head]; if (up && gmin > 1) seeds.push(lowCell);
+    for (j = 0; j < seeds.length; j++) { seen[seeds[j]] = stamp; queue[qt++] = seeds[j]; }
+    var reached = 0;
+    while (qh < qt) {
+      c = queue[qh++];
+      for (j = 0; j < nb[c].length; j++) {
+        q = nb[c][j]; if (seen[q] === stamp) continue;
+        if (!val[q] || (up && val[q] > k)) { seen[q] = stamp; queue[qt++] = q; if (!val[q]) reached++; }
+      }
+    }
+    return reached === empty;
+  }
+  function down(k, cell) {
+    if (k === 1) { count++; return count >= limit; }
     if (++nodes > cap) { over = true; return true; }
-    var nx = k + 1;
-    if (pos[nx] >= 0) return npDist(C, cell, pos[nx]) === 1 ? rec(nx, pos[nx]) : false;
-    var g = nx < N ? nextG[nx + 1] : 0, nb = npNbrs(R, C, cell);
-    for (var q = 0; q < nb.length; q++) {
-      var c2 = nb[q]; if (val[c2]) continue;
-      if (g) { var dd = npDist(C, c2, pos[g]); if (dd > g - nx || ((g - nx - dd) & 1)) continue; }
+    var nx = k - 1, list = nb[cell];
+    for (var q = 0; q < list.length; q++) {
+      var c2 = list[q]; if (val[c2]) continue;
       val[c2] = nx;
-      var stop = rec(nx, c2);
+      var stop = feasible(nx, c2, false) && down(nx, c2);
       val[c2] = 0;
       if (stop) return true;
     }
     return false;
   }
-  if (pos[1] < 0) return { count: 0, over: true, nodes: 0 };
-  rec(1, pos[1]);
+  function up(k, cell) {
+    if (k === N) return gmin > 1 ? down(gmin, lowCell) : (count++, count >= limit);
+    if (++nodes > cap) { over = true; return true; }
+    var nx = k + 1;
+    if (pos[nx] >= 0) return npDist(C, cell, pos[nx]) === 1 ? up(nx, pos[nx]) : false;
+    var g = nx < N ? nextG[nx + 1] : 0, list = nb[cell];
+    for (var q = 0; q < list.length; q++) {
+      var c2 = list[q]; if (val[c2]) continue;
+      if (g) { var dd = npDist(C, c2, pos[g]); if (dd > g - nx || ((g - nx - dd) & 1)) continue; }
+      val[c2] = nx;
+      var stop = feasible(nx, c2, true) && up(nx, c2);
+      val[c2] = 0;
+      if (stop) return true;
+    }
+    return false;
+  }
+  up(gmin, lowCell);
   return { count: count, over: over, nodes: nodes };
 }
 var NP_LEVELS = [
-  { R: 4, C: 4, keep: 0.5 }, { R: 4, C: 4, keep: 0.36 }, { R: 5, C: 5, keep: 0.4 }, { R: 5, C: 5, keep: 0.3 }, { R: 6, C: 6, keep: 0.32 },
-  { R: 6, C: 6, keep: 0.25 }, { R: 6, C: 6, keep: 0.2 }, { R: 7, C: 7, keep: 0.26 }, { R: 7, C: 7, keep: 0.2 }, { R: 7, C: 7, keep: 0.16 }
+  { n: 6, tries: 3 }, { n: 6, tries: 5 }, { n: 7, tries: 2 }, { n: 7, tries: 4 }, { n: 8, tries: 1 },
+  { n: 8, tries: 2 }, { n: 9, tries: 1 }, { n: 9, tries: 1 }, { n: 10, tries: 1 }, { n: 10, tries: 1 }
 ];
+/* Removes fixed numbers one at a time, keeping a removal only while the solution stays unique,
+   until no more can go. Keeps the hardest of a few attempts (most solver search). */
 function genNumpath(level, rng) {
-  var P = NP_LEVELS[level - 1], R = P.R, C = P.C, N = R * C, best = null;
-  for (var attempt = 0; attempt < 6; attempt++) {
+  var P = NP_LEVELS[level - 1], R = P.n, C = P.n, N = R * C, best = null, cap = N > 64 ? 25000 : 50000;
+  for (var attempt = 0; attempt < P.tries; attempt++) {
     var path = npPath(R, C, rng), sol = new Array(N);
     path.forEach(function (cell, k) { sol[cell] = k + 1; });
-    var giv = sol.slice(), count = N, target = Math.max(2, Math.round(N * P.keep)), order = shuffle(rng, range(N)), nodes = 0;
-    for (var q = 0; q < N && count > target; q++) {
-      var cell = order[q]; if (sol[cell] === 1) continue;
-      var keep = giv[cell]; giv[cell] = 0;
-      var res = npCount(R, C, giv, 2, 60000);
-      if (res.count === 1 && !res.over) { count--; nodes = res.nodes; } else giv[cell] = keep;
+    var giv = sol.slice(), count = N, order = shuffle(rng, range(N));
+    for (var q = 0; q < N; q++) {
+      var cell = order[q], keep = giv[cell]; giv[cell] = 0;
+      var res = npCount(R, C, giv, 2, cap);
+      if (res.count === 1 && !res.over) count--; else giv[cell] = keep;
     }
-    var cand = { giv: giv, sol: sol, path: path, count: count, nodes: nodes };
-    if (!best || count < best.count) best = cand;
-    if (count <= target) break;
+    var fin = npCount(R, C, giv, 2, cap * 4);
+    var cand = { giv: giv, sol: sol, path: path, count: count, nodes: fin.nodes };
+    if (!best || cand.nodes > best.nodes) best = cand;
   }
   return {
-    params: { rows: R, cols: C, target_givens: Math.max(2, Math.round(N * P.keep)), givens: best.count },
+    params: { rows: R, cols: C, givens: best.count },
     puzzle: { R: R, C: C, givens: best.giv, solution: best.sol, path: best.path },
     difficulty: best.nodes, difficulty_label: best.count + ' of ' + N + ' numbers given, solver search nodes: ' + best.nodes, optimal: null
   };

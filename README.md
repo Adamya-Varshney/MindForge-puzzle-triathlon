@@ -17,11 +17,11 @@ The whole game is a single self-contained HTML page. No server and no runtime de
 | Maths | KenKen | 3×3 with + only → 9×9 with all four operations; unique solution checked by a solver |
 | Maths | Cross Math | 3×3 (numbers 1–9) → 4×4 (1–16); fewer given numbers and more operators; usual order of operations; unique solution |
 | Maths | Math Maze | 3×3 → 6×6 path grid; fewer routes hit the target |
-| Maths | Number Sequence | Next term from 5 shown (add a fixed step) → next two terms from 6 shown (tribonacci, multiplying gaps, alternating operations); every puzzle is checked so no other simple rule gives a different answer |
+| Maths | Number Sequence | 19 rule families, hardest-first: gaps that follow primes, squares or Fibonacci; terms built from the two or three before; operations that take turns with growing amounts; digit sums; woven sequences. 6 shown / 1 to find → 5 shown / 3 to find. Every puzzle is rejected if a plain add-or-multiply rule explains it, or if any other known rule gives a different answer |
 | Analytical | Sliding Tiles | 3×3 by exact shortest solution (6 → 31 moves), then 4×4 by total distance from home |
 | Analytical | Lights Out | 3×3 → 7×7; fewest-presses solution computed over GF(2) |
 | Analytical | Colour Sort | 3 → 11 colours, tube height 4 → 5; every deal checked solvable |
-| Analytical | Number Path | 4×4 with half the numbers fixed → 7×7 with about 1 in 6 fixed; draw one path 1 → N through every cell; unique solution checked by a solver |
+| Analytical | Number Path | 6×6 → 10×10, with the fewest fixed numbers that still give one solution (about 4–6 on 6×6, 11–19 on 10×10); fill numbers anywhere, not just from 1; unique solution checked by a pruned solver |
 | Logic | Nonogram | 5×5 → 15×15; always solvable line by line, graded by solver passes |
 | Logic | Binary Grid (Takuzu) | 4×4 → 14×14; graded by the hardest deduction needed |
 | Logic | Code Breaker (Mastermind) | 4 colours / 3 pegs → 9 colours / 5 pegs with repeats; fewer guesses allowed |

@@ -1,6 +1,6 @@
 (function () {
 'use strict';
-var PT = window.PT, APP_VERSION = '1.2.0', MAX_LEVEL = 10, NEED = 2;
+var PT = window.PT, APP_VERSION = '1.3.0', MAX_LEVEL = 10, NEED = 2;
 
 /* ================= helpers ================= */
 function $(s, r) { return (r || document).querySelector(s); }
@@ -71,12 +71,12 @@ var PUZ = {
   sequence: {
     name: 'Number Sequence', desc: 'Spot the rule behind a row of numbers and write what comes next.',
     icon: sv('<rect x="3" y="14" width="3.6" height="7" rx="1" ' + F + '/><rect x="8.2" y="11" width="3.6" height="10" rx="1" ' + F + '/><rect x="13.4" y="7" width="3.6" height="14" rx="1" ' + F + '/><rect x="18.6" y="2.5" width="3" height="18.5" rx="1" ' + G + ' stroke-dasharray="1.6 1.4"/>'),
-    rules: ['A single rule produces every number in the row. Find it and type the next number, or the next two at the top levels.', 'Rules include adding or multiplying by a fixed amount, alternating steps, square and cube numbers, gaps that grow, and adding the previous terms together.', 'Each puzzle is checked so that no other simple rule fits the numbers shown and gives a different answer.', 'Use \u00b1 for a negative answer. A wrong submission counts as a mistake. The first hint shows the rule.']
+    rules: ['A single rule produces every number in the row. Type the next number, or the next two or three at higher levels.', 'Rules combine steps: gaps that follow their own pattern (primes, squares, Fibonacci, growing multiples), terms built from the two or three before them, two operations taking turns, digit sums, and two sequences woven together.', 'Every puzzle is checked so that no plain add-or-multiply rule explains it, and no other known rule gives a different answer.', 'Use \u00b1 for a negative answer. A wrong submission counts as a mistake. The first hint is a nudge, the second names the rule.']
   },
   numpath: {
-    name: 'Number Path', desc: 'Draw one path from 1 to the last number through every cell.',
+    name: 'Number Path', desc: 'Fill a grid with 1 to N so each number touches the next.',
     icon: sv('<path d="M6 6h12v6H6v6h12" fill="none" stroke="var(--t)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="6" r="2.6" ' + F + '/><circle cx="18" cy="18" r="2.6" fill="var(--t-deep)"/><circle cx="18" cy="12" r="1.6" ' + G + '/>'),
-    rules: ['Start at 1. Each tap places the next number in a cell next to the last one, up, down, left or right.', 'Use every cell exactly once. The path must pass through each fixed number exactly when its turn comes.', 'Tap a cell already on the path to step back to it.', 'Every puzzle has exactly one path that works.']
+    rules: ['Fill every cell with the numbers 1 to N, each used once, so that consecutive numbers sit in cells that touch up, down, left or right.', 'Only a few numbers are fixed. Work out runs from both ends and anywhere in the middle.', 'Select a cell, then type a number or tap one of the suggestions that would sit next to a neighbour. Lines join numbers that are already linked.', 'Every puzzle has exactly one solution. A wavy underline marks a number used twice.']
   },
   matrix: {
     name: 'Pattern Matrix', desc: 'Find the panel that completes a 3\u00d73 grid of shapes.',
@@ -912,8 +912,8 @@ function crossmathView(ctx) {
   };
 }
 function sequenceView(ctx) {
-  var p = ctx.puzzle, K = p.answers.length, vals = new Array(K).fill(''), sel = 0, wrong = {}, revealed = {}, ruleShown = false, boxes = [];
-  ctx.goal((K === 1 ? 'Type the next number' : 'Type the next two numbers') + ' in the row. One rule produces every number shown.');
+  var p = ctx.puzzle, K = p.answers.length, vals = new Array(K).fill(''), sel = 0, wrong = {}, revealed = {}, hintStage = 0, boxes = [];
+  ctx.goal((K === 1 ? 'Type the next number' : 'Type the next ' + (K === 2 ? 'two' : 'three') + ' numbers') + ' in the row. One rule produces every number shown.');
   function paint() {
     boxes.forEach(function (b, i) {
       b.textContent = vals[i] === '' ? '?' : vals[i].replace('-', '−');
@@ -953,11 +953,13 @@ function sequenceView(ctx) {
       paint();
     },
     hint: function () {
-      if (!ruleShown) { ruleShown = true; ctx.hintUsed('rule'); ctx.msg('The rule: ' + p.rule, 'good'); return; }
+      if (hintStage === 0) { hintStage = 1; ctx.hintUsed('nudge'); ctx.msg('Nudge: ' + p.clue, 'good'); return; }
+      if (hintStage === 1) { hintStage = 2; ctx.hintUsed('rule'); ctx.msg('The rule: ' + p.rule, 'good'); return; }
       var i = nextOpen(); if (i < 0) return;
-      if (K === 1) { ctx.msg('The rule: ' + p.rule + ' Work out the next number from the last one shown.'); return; }
+      var openCount = range(K).filter(function (q) { return !revealed[q]; }).length;
+      if (openCount <= 1) { ctx.msg('The rule: ' + p.rule + ' The last number is yours to work out.'); return; }
       revealed[i] = true; vals[i] = String(p.answers[i]); delete wrong[i]; sel = nextOpen() < 0 ? i : nextOpen();
-      ctx.hintUsed('reveal answer ' + (i + 1)); paint(); ctx.msg('The ' + (i ? 'second' : 'first') + ' number is ' + p.answers[i] + '. Now find the other one.');
+      ctx.hintUsed('reveal answer ' + (i + 1)); paint(); ctx.msg('Number ' + (i + 1) + ' is ' + p.answers[i] + '. Now find the rest.');
     },
     key: function (e) {
       var k = e.key;
@@ -975,79 +977,109 @@ function sequenceView(ctx) {
 }
 
 function numpathView(ctx) {
-  var p = ctx.puzzle, R = p.R, C = p.C, N = R * C, giv = p.givens, solPath = p.path, start = giv.indexOf(1), chain = [start], els = [], line, wrongFrom = -1, fixedAt = {};
-  giv.forEach(function (v, i) { if (v) fixedAt[v] = i; });
-  function adj(a, b) { return PT.npDist(C, a, b) === 1; }
-  function canStep(i, k) { return chain.indexOf(i) < 0 && (giv[i] ? giv[i] === k : fixedAt[k] === undefined); }
+  var p = ctx.puzzle, R = p.R, C = p.C, N = R * C, giv = p.givens, sol = p.solution, vals = giv.slice(), sel = -1, hist = [], wrong = {}, els = [];
+  var svgPath, quickRow, buf = { cell: -1, text: '' };
+  function nbrs(i) { var r = Math.floor(i / C), c = i % C, o = []; if (r > 0) o.push(i - C); if (r < R - 1) o.push(i + C); if (c > 0) o.push(i - 1); if (c < C - 1) o.push(i + 1); return o; }
+  function placedAt() { var at = {}; vals.forEach(function (v, i) { if (v) at[v] = at[v] === undefined ? i : -2; }); return at; }
+  function candidates(i) {
+    var at = placedAt(), set = {};
+    nbrs(i).forEach(function (j) { var v = vals[j]; if (!v) return; [v - 1, v + 1].forEach(function (w) { if (w >= 1 && w <= N && (at[w] === undefined || at[w] === i)) set[w] = 1; }); });
+    return Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+  }
   function paint() {
-    var head = chain[chain.length - 1], idx = {}, k = chain.length + 1;
-    chain.forEach(function (c, j) { idx[c] = j; });
+    var at = placedAt(), filled = 0, d = '';
     els.forEach(function (el, i) {
-      var inC = idx[i] !== undefined, cl = el.classList;
-      el.firstChild.textContent = inC ? String(idx[i] + 1) : (giv[i] ? String(giv[i]) : '');
-      cl.toggle('on', inC && i !== head); cl.toggle('head', i === head);
-      cl.toggle('next', !inC && chain.length < N && adj(head, i) && canStep(i, k));
-      cl.toggle('wrong', wrongFrom >= 0 && inC && idx[i] >= wrongFrom);
+      var v = vals[i], cl = el.classList; if (v) filled++;
+      el.firstChild.textContent = v ? String(v) : '';
+      cl.toggle('sel', i === sel); cl.toggle('clash', !!v && at[v] === -2); cl.toggle('wrong', !!wrong[i]);
+      var linked = 0; if (v) nbrs(i).forEach(function (j) { if (Math.abs(vals[j] - v) === 1 && vals[j]) linked++; });
+      cl.toggle('linked', linked > 0); cl.toggle('done', linked === 2 || (linked === 1 && (v === 1 || v === N)));
+      if (v) nbrs(i).forEach(function (j) { if (j > i && vals[j] && Math.abs(vals[j] - v) === 1) d += 'M' + (i % C + 0.5) + ' ' + (Math.floor(i / C) + 0.5) + 'L' + (j % C + 0.5) + ' ' + (Math.floor(j / C) + 0.5); });
     });
-    line.setAttribute('points', chain.map(function (x) { return (x % C + 0.5) + ',' + (Math.floor(x / C) + 0.5); }).join(' '));
-    ctx.goal(chain.length < N ? 'Draw one path from <b>1</b> to <b>' + N + '</b> through every cell. Next number <b>' + k + '</b>.' : 'Every cell is on the path.');
-  }
-  function stuck() {
-    var head = chain[chain.length - 1], k = chain.length + 1;
-    return chain.length < N && range(N).every(function (i) { return !adj(head, i) || !canStep(i, k); });
-  }
-  function tap(i) {
-    var at = chain.indexOf(i);
-    if (at >= 0) { if (at < chain.length - 1) { chain.length = at + 1; wrongFrom = -1; ctx.undoUsed('back to ' + (at + 1)); ctx.msg(''); paint(); } return; }
-    var head = chain[chain.length - 1], k = chain.length + 1;
-    if (!adj(head, i)) { ctx.msg('Pick a cell next to number ' + (k - 1) + '.'); return; }
-    if (giv[i] && giv[i] !== k) { ctx.msg('That cell is fixed as ' + giv[i] + ', and you are placing ' + k + '.', 'bad'); return; }
-    if (!giv[i] && fixedAt[k] !== undefined) { ctx.msg(k + ' is fixed in another cell, so the path has to reach it next.', 'bad'); return; }
-    chain.push(i); wrongFrom = -1; ctx.move(k + ' at ' + rc(C, i)); ctx.msg(''); paint();
-    if (chain.length === N) {
-      for (var j = 0; j < N; j++) if (chain[j] !== solPath[j]) { ctx.msg('Every cell is used, but not along the only working path. Check shows where it went wrong.', 'bad'); return; }
-      ctx.solved(); return;
+    svgPath.setAttribute('d', d);
+    quickRow.textContent = '';
+    if (sel >= 0 && !giv[sel]) {
+      var cs = candidates(sel);
+      if (cs.length) {
+        quickRow.appendChild(h('span', { class: 'np-qlabel', text: 'Fits next to a neighbour:' }));
+        cs.forEach(function (w) { quickRow.appendChild(h('button', { class: 'btn quick', text: String(w), onclick: function () { set(sel, w); } })); });
+      }
     }
-    if (stuck()) ctx.msg('No way forward from ' + k + '. Tap an earlier cell to step back.', 'bad');
+    ctx.goal('Fill <b>1–' + N + '</b> so each number touches the next one up, down, left or right. <b>' + filled + '</b> of <b>' + N + '</b> placed.');
   }
+  function checkDone() {
+    for (var i = 0; i < N; i++) if (!vals[i]) return;
+    for (i = 0; i < N; i++) if (vals[i] !== sol[i]) { ctx.msg('Every cell is filled, but the path breaks somewhere. Check shows where.', 'bad'); return; }
+    ctx.solved();
+  }
+  function set(i, v) {
+    if (i < 0 || giv[i] || vals[i] === v) return;
+    if (v > N) { ctx.msg('The numbers only go up to ' + N + '.'); return; }
+    hist.push([i, vals[i]]); vals[i] = v; delete wrong[i];
+    ctx.move(rc(C, i) + '=' + (v || 'clear')); ctx.msg(''); paint(); if (v) checkDone();
+  }
+  function typeDigit(d) {
+    if (sel < 0) { ctx.msg('Select a cell first.'); return; }
+    if (giv[sel]) return;
+    var text = buf.cell === sel ? buf.text + d : String(d);
+    if (+text > N || text === '0') text = String(d);
+    buf = { cell: sel, text: text };
+    if (+text >= 1) set(sel, +text);
+  }
+  function select(i) { sel = i; buf = { cell: -1, text: '' }; paint(); }
   return {
     tools: { undo: true, notes: false, hint: true, check: true, restart: true },
     mount: function () {
-      var grid = h('div', { class: 'maze np', style: '--c:' + C });
+      var grid = h('div', { class: 'npg', style: '--c:' + C });
       range(N).forEach(function (i) {
-        var b = h('button', { class: 'cell' + (giv[i] ? ' fixed' : ''), 'aria-label': rcName(C, i) + (giv[i] ? ', fixed number ' + giv[i] : ''), onclick: function () { tap(i); } }, h('span'));
+        var r = Math.floor(i / C), c = i % C;
+        var b = h('button', { class: 'cell' + (giv[i] ? ' fixed' : '') + (c === C - 1 ? ' lastc' : '') + (r === R - 1 ? ' lastr' : ''), 'aria-label': rcName(C, i) + (giv[i] ? ', fixed number ' + giv[i] : ''), onclick: function () { select(i); } }, h('span', { class: 'v' }));
         els.push(b); grid.appendChild(b);
       });
       var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('viewBox', '0 0 ' + C + ' ' + R); svg.setAttribute('preserveAspectRatio', 'none');
-      line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline'); svg.appendChild(line); grid.appendChild(svg);
-      ctx.board.appendChild(grid); paint();
+      svg.setAttribute('viewBox', '0 0 ' + C + ' ' + R); svg.setAttribute('preserveAspectRatio', 'none'); svg.setAttribute('aria-hidden', 'true');
+      svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path'); svg.appendChild(svgPath); grid.appendChild(svg);
+      ctx.board.appendChild(grid);
+      quickRow = h('div', { class: 'np-quick' }); ctx.pad.appendChild(quickRow);
+      ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].forEach(function (d) { ctx.pad.appendChild(h('button', { class: 'btn', text: d, onclick: function () { typeDigit(+d); } })); });
+      ctx.pad.appendChild(h('button', { class: 'btn wide', text: 'Erase', onclick: function () { buf = { cell: -1, text: '' }; set(sel, 0); } }));
+      paint();
     },
-    undo: function () { if (chain.length < 2) return false; chain.pop(); wrongFrom = -1; paint(); return true; },
+    undo: function () { var r = hist.pop(); if (!r) return false; vals[r[0]] = r[1]; delete wrong[r[0]]; sel = r[0]; buf = { cell: -1, text: '' }; paint(); return true; },
     hint: function () {
-      var k = 0; while (k < chain.length && chain[k] === solPath[k]) k++;
-      var cut = chain.length > k; if (cut) chain.length = k;
-      if (k >= N) return;
-      chain.push(solPath[k]); wrongFrom = -1; ctx.hintUsed('place ' + (k + 1));
-      ctx.msg(cut ? 'Your path left the only working route, so it was cut back and moved one step along it.' : 'Placed ' + (k + 1) + ' on the working route.'); paint();
-      if (chain.length === N) ctx.solved();
+      var i;
+      for (i = 0; i < N; i++) if (!giv[i] && vals[i] && vals[i] !== sol[i]) {
+        hist.push([i, vals[i]]); var was = vals[i]; vals[i] = 0; delete wrong[i]; sel = i; ctx.hintUsed('clear ' + rc(C, i)); paint(); flash(els[i], 'flash');
+        ctx.msg('The ' + was + ' in ' + rcName(C, i) + ' was wrong, so it has been cleared.'); return;
+      }
+      var pickI = -1;
+      for (i = 0; i < N && pickI < 0; i++) if (!vals[i] && nbrs(i).some(function (j) { return vals[j] && Math.abs(vals[j] - sol[i]) === 1; })) pickI = i;
+      if (pickI < 0) pickI = vals.indexOf(0);
+      if (pickI < 0) return;
+      hist.push([pickI, 0]); vals[pickI] = sol[pickI]; sel = pickI; ctx.hintUsed(rc(C, pickI) + '=' + sol[pickI]); paint(); flash(els[pickI], 'flash');
+      ctx.msg('Placed ' + sol[pickI] + ' in ' + rcName(C, pickI) + '.'); checkDone();
     },
     check: function () {
-      var k = 0; while (k < chain.length && chain[k] === solPath[k]) k++;
-      var cnt = chain.length - k; wrongFrom = cnt ? k : -1; ctx.checked(cnt); paint();
-      ctx.msg(cnt ? 'The path goes wrong from number ' + (k + 1) + '. ' + cnt + (cnt === 1 ? ' step is' : ' steps are') + ' marked.' : 'No mistakes so far.', cnt ? 'bad' : 'good');
+      var cnt = 0; wrong = {};
+      for (var i = 0; i < N; i++) if (!giv[i] && vals[i] && vals[i] !== sol[i]) { wrong[i] = 1; cnt++; }
+      ctx.checked(cnt); paint();
+      ctx.msg(cnt ? cnt + (cnt === 1 ? ' wrong number is marked.' : ' wrong numbers are marked.') : 'No mistakes so far.', cnt ? 'bad' : 'good');
     },
-    restart: function () { chain = [start]; wrongFrom = -1; paint(); },
+    restart: function () { vals = giv.slice(); hist = []; wrong = {}; sel = -1; buf = { cell: -1, text: '' }; paint(); },
     key: function (e) {
-      var head = chain[chain.length - 1], r = Math.floor(head / C), c = head % C, t = -1;
-      if (e.key === 'ArrowUp' && r > 0) t = head - C; else if (e.key === 'ArrowDown' && r < R - 1) t = head + C;
-      else if (e.key === 'ArrowLeft' && c > 0) t = head - 1; else if (e.key === 'ArrowRight' && c < C - 1) t = head + 1;
-      if (t >= 0) { tap(t); return true; }
-      if (e.key === 'Backspace' && chain.length > 1) { $('#t-undo').click(); return true; }
+      var k = e.key;
+      if (/^[0-9]$/.test(k)) { typeDigit(+k); return true; }
+      if (k === 'Backspace' || k === 'Delete') { buf = { cell: -1, text: '' }; set(sel, 0); return true; }
+      if (k.indexOf('Arrow') === 0) {
+        if (sel < 0) sel = 0;
+        else if (k === 'ArrowUp' && sel >= C) sel -= C; else if (k === 'ArrowDown' && sel < N - C) sel += C;
+        else if (k === 'ArrowLeft' && sel % C > 0) sel--; else if (k === 'ArrowRight' && sel % C < C - 1) sel++;
+        select(sel); return true;
+      }
       return false;
     },
-    state: function () { return { path: chain }; },
-    solve: function () { chain = [start]; solPath.slice(1).forEach(function (x) { if (!ctx.isDone()) tap(x); }); }
+    state: function () { return { values: vals }; },
+    solve: function () { vals = sol.slice(); paint(); checkDone(); }
   };
 }
 
