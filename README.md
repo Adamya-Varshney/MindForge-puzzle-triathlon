@@ -2,11 +2,11 @@
 
 A timed puzzle game across three lanes: **Maths**, **Analytical** and **Logic**. Every puzzle is generated fresh from a seed and checked by a solver before you see it. Every attempt is logged in full, and you move up a level only after clearing all three lanes at your current level.
 
-The whole game is a single self-contained HTML page. No server, no build tools beyond Python, no runtime dependencies.
+The whole game is a single self-contained HTML page. No server and no runtime dependencies; the build is one Node script.
 
 ## Play
 
-- Open `dist/index.html` in any modern browser. Attempts are saved in that browser's local storage.
+- Open `dist/index.html` in any modern browser, or deploy the repo to Vercel (settings are in `vercel.json`: build `node build.js`, output `dist`). Attempts are saved in each player's browser storage.
 - When published as a Claude artifact (`dist/puzzle-triathlon.html`), attempts are saved to a private per-user database instead, and CSV export goes through Claude's download prompt.
 
 ## Puzzles
@@ -42,7 +42,8 @@ src/engines.js   seeded generators and solvers for all puzzle types (runs in the
 src/app.js       UI, timer, puzzle boards, attempt log, stats, storage, level gate
 src/style.css    styles, light and dark themes
 src/body.html    page markup
-build.py         combines src/ into dist/
+build.js         combines src/ into dist/ (Node, no dependencies)
+vercel.json      static deployment settings for Vercel
 dist/            built pages (committed so the game can be opened without building)
 tests/           generator test (Node) and browser test (Playwright)
 ```
@@ -50,9 +51,10 @@ tests/           generator test (Node) and browser test (Playwright)
 ## Build and test
 
 ```bash
-python3 build.py                  # writes dist/index.html and dist/puzzle-triathlon.html
+node build.js                     # writes dist/index.html and dist/puzzle-triathlon.html
 node tests/generators.test.js     # every type at every level: valid, solvable, unique where required
-npm install && npm run test:e2e   # plays every type at Levels 1 and 10 in headless Chromium
+npm i -D playwright && npx playwright install chromium
+npm run test:e2e                  # plays every type at Levels 1 and 10 in headless Chromium
 ```
 
 `node tests/generators.test.js sudoku,crossmath 20` limits the run to some types and sets seeds per level.

@@ -4,11 +4,8 @@
   "private": true,
   "description": "Timed puzzle game with procedurally generated Maths, Analytical and Logic puzzles, an attempt log, and gated levels.",
   "scripts": {
-    "build": "python3 build.py",
+    "build": "node build.js",
     "test": "node tests/generators.test.js",
     "test:e2e": "node tests/e2e.test.js"
-  },
-  "devDependencies": {
-    "playwright": "^1.56.0"
   }
 }

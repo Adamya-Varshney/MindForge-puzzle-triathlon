@@ -1,5 +1,5 @@
 /* Browser test: plays every puzzle type at Level 1 and Level 10 and checks the attempt log and level gate.
-   Usage: python3 build.py && npm run test:e2e   (needs Playwright with Chromium) */
+   Usage: node build.js && npm run test:e2e   (needs Playwright: npm i -D playwright && npx playwright install chromium) */
 const path = require('path');
 const { chromium } = require('playwright');
 
