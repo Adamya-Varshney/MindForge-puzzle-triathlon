@@ -17,12 +17,16 @@ The whole game is a single self-contained HTML page. No server and no runtime de
 | Maths | KenKen | 3×3 with + only → 9×9 with all four operations; unique solution checked by a solver |
 | Maths | Cross Math | 3×3 (numbers 1–9) → 4×4 (1–16); fewer given numbers and more operators; usual order of operations; unique solution |
 | Maths | Math Maze | 3×3 → 6×6 path grid; fewer routes hit the target |
+| Maths | Number Sequence | Next term from 5 shown (add a fixed step) → next two terms from 6 shown (tribonacci, multiplying gaps, alternating operations); every puzzle is checked so no other simple rule gives a different answer |
 | Analytical | Sliding Tiles | 3×3 by exact shortest solution (6 → 31 moves), then 4×4 by total distance from home |
 | Analytical | Lights Out | 3×3 → 7×7; fewest-presses solution computed over GF(2) |
 | Analytical | Colour Sort | 3 → 11 colours, tube height 4 → 5; every deal checked solvable |
+| Analytical | Number Path | 4×4 with half the numbers fixed → 7×7 with about 1 in 6 fixed; draw one path 1 → N through every cell; unique solution checked by a solver |
 | Logic | Nonogram | 5×5 → 15×15; always solvable line by line, graded by solver passes |
 | Logic | Binary Grid (Takuzu) | 4×4 → 14×14; graded by the hardest deduction needed |
 | Logic | Code Breaker (Mastermind) | 4 colours / 3 pegs → 9 colours / 5 pegs with repeats; fewer guesses allowed |
+| Logic | Pattern Matrix | 3×3 shape grids with one panel missing: 1 changing feature, 6 options → all 5 features (shape, count, size, fill, colour), 8 options; 3–5 grids per attempt with limited wrong picks |
+| Logic | Safe Cracker | Deduce a 3-digit → 5-digit lock code from guess-and-feedback clues; fewer "nothing is correct" clues and less informative clues at higher levels; exactly one code fits; 3 tries |
 
 ## Levels
 
@@ -38,7 +42,7 @@ Each attempt is one record with: attempt id, lane, puzzle, level, seed, generato
 ## Project layout
 
 ```
-src/engines.js   seeded generators and solvers for all puzzle types (runs in the page, a Web Worker, and Node)
+src/engines.js   seeded generators and solvers for all 14 puzzle types (runs in the page, a Web Worker, and Node)
 src/app.js       UI, timer, puzzle boards, attempt log, stats, storage, level gate
 src/style.css    styles, light and dark themes
 src/body.html    page markup

@@ -1,6 +1,6 @@
 (function () {
 'use strict';
-var PT = window.PT, APP_VERSION = '1.1.0', MAX_LEVEL = 10, NEED = 2;
+var PT = window.PT, APP_VERSION = '1.2.0', MAX_LEVEL = 10, NEED = 2;
 
 /* ================= helpers ================= */
 function $(s, r) { return (r || document).querySelector(s); }
@@ -68,6 +68,26 @@ var PUZ = {
     icon: sv('<rect x="3" y="3" width="6" height="6" rx="1.5" ' + F + '/><rect x="15" y="3" width="6" height="6" rx="1.5" ' + G + '/><rect x="3" y="15" width="6" height="6" rx="1.5" ' + G + '/><rect x="15" y="15" width="6" height="6" rx="1.5" fill="var(--t-deep)"/><path d="M10.4 6h3.2M12 4.4v3.2M10.4 17.2h3.2M10.4 18.9h3.2M4.9 10.9l2.2 2.2M7.1 10.9l-2.2 2.2" fill="none" stroke="var(--t-deep)" stroke-width="1.3" stroke-linecap="round"/>'),
     rules: ['Fill the empty cells with the numbers 1 to 9, or 1 to 16 on the larger grid. Each number is used exactly once.', 'Every row reads left to right and every column top to bottom as a sum that must equal the result at its end.', 'Multiplication and division are done before addition and subtraction, as in ordinary arithmetic.', 'A result shows a tick when its line is right and is crossed out when the line is full but wrong.', 'Every puzzle has exactly one solution. A wavy underline marks a number you have used twice.']
   },
+  sequence: {
+    name: 'Number Sequence', desc: 'Spot the rule behind a row of numbers and write what comes next.',
+    icon: sv('<rect x="3" y="14" width="3.6" height="7" rx="1" ' + F + '/><rect x="8.2" y="11" width="3.6" height="10" rx="1" ' + F + '/><rect x="13.4" y="7" width="3.6" height="14" rx="1" ' + F + '/><rect x="18.6" y="2.5" width="3" height="18.5" rx="1" ' + G + ' stroke-dasharray="1.6 1.4"/>'),
+    rules: ['A single rule produces every number in the row. Find it and type the next number, or the next two at the top levels.', 'Rules include adding or multiplying by a fixed amount, alternating steps, square and cube numbers, gaps that grow, and adding the previous terms together.', 'Each puzzle is checked so that no other simple rule fits the numbers shown and gives a different answer.', 'Use \u00b1 for a negative answer. A wrong submission counts as a mistake. The first hint shows the rule.']
+  },
+  numpath: {
+    name: 'Number Path', desc: 'Draw one path from 1 to the last number through every cell.',
+    icon: sv('<path d="M6 6h12v6H6v6h12" fill="none" stroke="var(--t)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="6" r="2.6" ' + F + '/><circle cx="18" cy="18" r="2.6" fill="var(--t-deep)"/><circle cx="18" cy="12" r="1.6" ' + G + '/>'),
+    rules: ['Start at 1. Each tap places the next number in a cell next to the last one, up, down, left or right.', 'Use every cell exactly once. The path must pass through each fixed number exactly when its turn comes.', 'Tap a cell already on the path to step back to it.', 'Every puzzle has exactly one path that works.']
+  },
+  matrix: {
+    name: 'Pattern Matrix', desc: 'Find the panel that completes a 3\u00d73 grid of shapes.',
+    icon: sv('<rect x="3" y="3" width="5" height="5" rx="1" ' + F + '/><circle cx="12" cy="5.5" r="2.5" ' + F + '/><rect x="16" y="3" width="5" height="5" rx="1" ' + G + '/><circle cx="5.5" cy="12" r="2.5" ' + G + '/><rect x="9.5" y="9.5" width="5" height="5" rx="1" fill="var(--t-deep)"/><circle cx="18.5" cy="12" r="2.5" ' + F + '/><rect x="3" y="16" width="5" height="5" rx="1" ' + G + '/><circle cx="12" cy="18.5" r="2.5" fill="var(--t-deep)"/><rect x="16" y="16" width="5" height="5" rx="1" ' + G + ' stroke-dasharray="1.5 1.3"/>'),
+    rules: ['Each row of the grid follows the same rules for shape, number, size, fill and colour.', 'A feature may stay the same along a row, step up or down by a fixed amount, use the same three values in a different order, or add up (third panel = first + second).', 'Pick the option that fits every rule. Number keys 1\u20138 also choose an option.', 'Each attempt has several matrices. Too many wrong picks ends the attempt. A hint names one rule and removes two wrong options.']
+  },
+  safe: {
+    name: 'Safe Cracker', desc: 'Deduce the lock code from clues about earlier guesses.',
+    icon: sv('<rect x="3" y="4" width="18" height="16" rx="3" ' + G + '/><circle cx="11" cy="12" r="4.6" ' + F + '/><path d="M11 9.2v2.8M18 9v6" stroke="var(--t-deep)" stroke-width="1.6" stroke-linecap="round"/>'),
+    rules: ['Each clue is an earlier guess with feedback. Well placed means the right digit in the right slot. Wrongly placed means the digit is in the code but in another slot.', 'No digit appears twice in the code or in a guess. Exactly one code fits every clue.', 'Tap a digit in a clue to cross it out as a note to yourself. It does not count as a move.', 'You have three tries. A hint reveals one slot and locks it in.']
+  },
   mathmaze: {
     name: 'Math Maze', desc: 'Walk from Start to Finish and land on the exact target.',
     icon: sv('<path d="M5 5h7v7h7v7" fill="none" stroke="var(--t)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="5" cy="5" r="2.4" ' + F + '/><circle cx="19" cy="19" r="2.4" fill="var(--t-deep)"/>'),
@@ -104,7 +124,7 @@ var PUZ = {
     rules: ['Build a guess from the colours, then submit it.', 'Exact means right colour in the right position. Misplaced means right colour in the wrong position.', 'You have a limited number of guesses. Running out logs the attempt as failed.', 'Each colour carries a number so it never depends on colour alone.']
   }
 };
-var TYPE_ORDER = { math: ['sudoku', 'kenken', 'crossmath', 'mathmaze'], analytical: ['sliding', 'lights', 'ballsort'], logic: ['nonogram', 'takuzu', 'mastermind'] };
+var TYPE_ORDER = { math: ['sudoku', 'kenken', 'crossmath', 'mathmaze', 'sequence'], analytical: ['sliding', 'lights', 'ballsort', 'numpath'], logic: ['nonogram', 'takuzu', 'mastermind', 'matrix', 'safe'] };
 var BASE_PAR = [60, 90, 150, 210, 270, 360, 450, 540, 660, 780];
 
 /* ================= state ================= */
@@ -891,7 +911,285 @@ function crossmathView(ctx) {
     solve: function () { vals = sol.slice(); paint(); checkDone(); }
   };
 }
-var VIEWS = { sudoku: sudokuView, kenken: kenkenView, crossmath: crossmathView, mathmaze: mazeView, sliding: slidingView, lights: lightsView, ballsort: ballsortView, nonogram: nonogramView, takuzu: takuzuView, mastermind: mastermindView };
+function sequenceView(ctx) {
+  var p = ctx.puzzle, K = p.answers.length, vals = new Array(K).fill(''), sel = 0, wrong = {}, revealed = {}, ruleShown = false, boxes = [];
+  ctx.goal((K === 1 ? 'Type the next number' : 'Type the next two numbers') + ' in the row. One rule produces every number shown.');
+  function paint() {
+    boxes.forEach(function (b, i) {
+      b.textContent = vals[i] === '' ? '?' : vals[i].replace('-', '−');
+      b.classList.toggle('sel', i === sel); b.classList.toggle('wrong', !!wrong[i]); b.classList.toggle('given', !!revealed[i]);
+    });
+  }
+  function nextOpen() { for (var i = 0; i < K; i++) if (!revealed[i]) return i; return -1; }
+  function type(ch) {
+    if (revealed[sel]) return;
+    var v = vals[sel];
+    if (ch === '-') v = v.charAt(0) === '-' ? v.slice(1) : '-' + v;
+    else if (v.replace('-', '').length < 7) v += ch;
+    vals[sel] = v; delete wrong[sel]; ctx.msg(''); paint();
+  }
+  function back() { if (revealed[sel]) return; vals[sel] = vals[sel].slice(0, -1); delete wrong[sel]; paint(); }
+  function submit() {
+    for (var i = 0; i < K; i++) if (vals[i] === '' || vals[i] === '-') { sel = i; paint(); ctx.msg(K === 1 ? 'Type a number first.' : 'Fill in both boxes first.'); return; }
+    ctx.move('answer ' + vals.join(', '));
+    var bad = 0; wrong = {};
+    vals.forEach(function (v, j) { if (Number(v) !== p.answers[j]) { bad++; wrong[j] = 1; } });
+    paint();
+    if (!bad) { ctx.solved(); return; }
+    ctx.mistake(1);
+    ctx.msg(K === 1 ? 'Not that one. The rule has to fit every number shown.' : bad === K ? 'Neither number fits the rule.' : 'One of the two numbers is off. It is marked.', 'bad');
+  }
+  return {
+    tools: { undo: false, notes: false, hint: true, check: false, restart: false },
+    mount: function () {
+      var row = h('div', { class: 'seq' });
+      p.shown.forEach(function (v) { row.appendChild(h('span', { class: 'sq-tile', text: String(v).replace('-', '−') })); });
+      range(K).forEach(function (i) { var b = h('button', { class: 'sq-box', 'aria-label': 'Answer ' + (i + 1), onclick: function () { sel = i; paint(); } }); boxes.push(b); row.appendChild(b); });
+      ctx.board.appendChild(row);
+      ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].forEach(function (d) { ctx.pad.appendChild(h('button', { class: 'btn', text: d, onclick: function () { type(d); } })); });
+      ctx.pad.appendChild(h('button', { class: 'btn', text: '±', 'aria-label': 'Make negative or positive', onclick: function () { type('-'); } }));
+      ctx.pad.appendChild(h('button', { class: 'btn wide', text: 'Delete', onclick: back }));
+      ctx.pad.appendChild(h('button', { class: 'btn wide primary', id: 'sq-submit', text: 'Submit', onclick: submit }));
+      paint();
+    },
+    hint: function () {
+      if (!ruleShown) { ruleShown = true; ctx.hintUsed('rule'); ctx.msg('The rule: ' + p.rule, 'good'); return; }
+      var i = nextOpen(); if (i < 0) return;
+      if (K === 1) { ctx.msg('The rule: ' + p.rule + ' Work out the next number from the last one shown.'); return; }
+      revealed[i] = true; vals[i] = String(p.answers[i]); delete wrong[i]; sel = nextOpen() < 0 ? i : nextOpen();
+      ctx.hintUsed('reveal answer ' + (i + 1)); paint(); ctx.msg('The ' + (i ? 'second' : 'first') + ' number is ' + p.answers[i] + '. Now find the other one.');
+    },
+    key: function (e) {
+      var k = e.key;
+      if (/^[0-9]$/.test(k)) { type(k); return true; }
+      if (k === '-') { type('-'); return true; }
+      if (k === 'Backspace' || k === 'Delete') { back(); return true; }
+      if (k === 'Enter') { submit(); return true; }
+      if (k === 'ArrowLeft' && sel > 0) { sel--; paint(); return true; }
+      if (k === 'ArrowRight' && sel < K - 1) { sel++; paint(); return true; }
+      return false;
+    },
+    state: function () { return { answers: vals }; },
+    solve: function () { vals = p.answers.map(String); submit(); }
+  };
+}
+
+function numpathView(ctx) {
+  var p = ctx.puzzle, R = p.R, C = p.C, N = R * C, giv = p.givens, solPath = p.path, start = giv.indexOf(1), chain = [start], els = [], line, wrongFrom = -1, fixedAt = {};
+  giv.forEach(function (v, i) { if (v) fixedAt[v] = i; });
+  function adj(a, b) { return PT.npDist(C, a, b) === 1; }
+  function canStep(i, k) { return chain.indexOf(i) < 0 && (giv[i] ? giv[i] === k : fixedAt[k] === undefined); }
+  function paint() {
+    var head = chain[chain.length - 1], idx = {}, k = chain.length + 1;
+    chain.forEach(function (c, j) { idx[c] = j; });
+    els.forEach(function (el, i) {
+      var inC = idx[i] !== undefined, cl = el.classList;
+      el.firstChild.textContent = inC ? String(idx[i] + 1) : (giv[i] ? String(giv[i]) : '');
+      cl.toggle('on', inC && i !== head); cl.toggle('head', i === head);
+      cl.toggle('next', !inC && chain.length < N && adj(head, i) && canStep(i, k));
+      cl.toggle('wrong', wrongFrom >= 0 && inC && idx[i] >= wrongFrom);
+    });
+    line.setAttribute('points', chain.map(function (x) { return (x % C + 0.5) + ',' + (Math.floor(x / C) + 0.5); }).join(' '));
+    ctx.goal(chain.length < N ? 'Draw one path from <b>1</b> to <b>' + N + '</b> through every cell. Next number <b>' + k + '</b>.' : 'Every cell is on the path.');
+  }
+  function stuck() {
+    var head = chain[chain.length - 1], k = chain.length + 1;
+    return chain.length < N && range(N).every(function (i) { return !adj(head, i) || !canStep(i, k); });
+  }
+  function tap(i) {
+    var at = chain.indexOf(i);
+    if (at >= 0) { if (at < chain.length - 1) { chain.length = at + 1; wrongFrom = -1; ctx.undoUsed('back to ' + (at + 1)); ctx.msg(''); paint(); } return; }
+    var head = chain[chain.length - 1], k = chain.length + 1;
+    if (!adj(head, i)) { ctx.msg('Pick a cell next to number ' + (k - 1) + '.'); return; }
+    if (giv[i] && giv[i] !== k) { ctx.msg('That cell is fixed as ' + giv[i] + ', and you are placing ' + k + '.', 'bad'); return; }
+    if (!giv[i] && fixedAt[k] !== undefined) { ctx.msg(k + ' is fixed in another cell, so the path has to reach it next.', 'bad'); return; }
+    chain.push(i); wrongFrom = -1; ctx.move(k + ' at ' + rc(C, i)); ctx.msg(''); paint();
+    if (chain.length === N) {
+      for (var j = 0; j < N; j++) if (chain[j] !== solPath[j]) { ctx.msg('Every cell is used, but not along the only working path. Check shows where it went wrong.', 'bad'); return; }
+      ctx.solved(); return;
+    }
+    if (stuck()) ctx.msg('No way forward from ' + k + '. Tap an earlier cell to step back.', 'bad');
+  }
+  return {
+    tools: { undo: true, notes: false, hint: true, check: true, restart: true },
+    mount: function () {
+      var grid = h('div', { class: 'maze np', style: '--c:' + C });
+      range(N).forEach(function (i) {
+        var b = h('button', { class: 'cell' + (giv[i] ? ' fixed' : ''), 'aria-label': rcName(C, i) + (giv[i] ? ', fixed number ' + giv[i] : ''), onclick: function () { tap(i); } }, h('span'));
+        els.push(b); grid.appendChild(b);
+      });
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 ' + C + ' ' + R); svg.setAttribute('preserveAspectRatio', 'none');
+      line = document.createElementNS('http://www.w3.org/2000/svg', 'polyline'); svg.appendChild(line); grid.appendChild(svg);
+      ctx.board.appendChild(grid); paint();
+    },
+    undo: function () { if (chain.length < 2) return false; chain.pop(); wrongFrom = -1; paint(); return true; },
+    hint: function () {
+      var k = 0; while (k < chain.length && chain[k] === solPath[k]) k++;
+      var cut = chain.length > k; if (cut) chain.length = k;
+      if (k >= N) return;
+      chain.push(solPath[k]); wrongFrom = -1; ctx.hintUsed('place ' + (k + 1));
+      ctx.msg(cut ? 'Your path left the only working route, so it was cut back and moved one step along it.' : 'Placed ' + (k + 1) + ' on the working route.'); paint();
+      if (chain.length === N) ctx.solved();
+    },
+    check: function () {
+      var k = 0; while (k < chain.length && chain[k] === solPath[k]) k++;
+      var cnt = chain.length - k; wrongFrom = cnt ? k : -1; ctx.checked(cnt); paint();
+      ctx.msg(cnt ? 'The path goes wrong from number ' + (k + 1) + '. ' + cnt + (cnt === 1 ? ' step is' : ' steps are') + ' marked.' : 'No mistakes so far.', cnt ? 'bad' : 'good');
+    },
+    restart: function () { chain = [start]; wrongFrom = -1; paint(); },
+    key: function (e) {
+      var head = chain[chain.length - 1], r = Math.floor(head / C), c = head % C, t = -1;
+      if (e.key === 'ArrowUp' && r > 0) t = head - C; else if (e.key === 'ArrowDown' && r < R - 1) t = head + C;
+      else if (e.key === 'ArrowLeft' && c > 0) t = head - 1; else if (e.key === 'ArrowRight' && c < C - 1) t = head + 1;
+      if (t >= 0) { tap(t); return true; }
+      if (e.key === 'Backspace' && chain.length > 1) { $('#t-undo').click(); return true; }
+      return false;
+    },
+    state: function () { return { path: chain }; },
+    solve: function () { chain = [start]; solPath.slice(1).forEach(function (x) { if (!ctx.isDone()) tap(x); }); }
+  };
+}
+
+var PM_POS = { 1: [[50, 50]], 2: [[30, 50], [70, 50]], 3: [[50, 28], [28, 70], [72, 70]], 4: [[30, 30], [70, 30], [30, 70], [70, 70]], 5: [[28, 28], [72, 28], [50, 50], [28, 72], [72, 72]] };
+var PM_COLOURS = ['var(--ink)', 'var(--t)', 'var(--b8)'], PM_R = [9, 13, 17];
+function pmShapeSvg(o, x, y) {
+  var r = PM_R[o.size], col = PM_COLOURS[o.color];
+  var paint = o.fill === 0 ? 'fill="' + col + '" stroke="' + col + '"' : o.fill === 1 ? 'fill="' + col + '" fill-opacity=".28" stroke="' + col + '"' : 'fill="none" stroke="' + col + '"';
+  paint += ' stroke-width="3" stroke-linejoin="round"';
+  var pts = function (arr) { return 'points="' + arr.map(function (q) { return (x + q[0] * r).toFixed(1) + ',' + (y + q[1] * r).toFixed(1); }).join(' ') + '"'; };
+  switch (o.shape) {
+    case 0: return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" ' + paint + '/>';
+    case 1: return '<rect x="' + (x - r * 0.86) + '" y="' + (y - r * 0.86) + '" width="' + (r * 1.72) + '" height="' + (r * 1.72) + '" ' + paint + '/>';
+    case 2: return '<polygon ' + pts([[0, -1.05], [0.95, 0.75], [-0.95, 0.75]]) + ' ' + paint + '/>';
+    case 3: return '<polygon ' + pts([[0, -1.1], [1, 0], [0, 1.1], [-1, 0]]) + ' ' + paint + '/>';
+    default: return '<polygon ' + pts([[0.5, -0.87], [1, 0], [0.5, 0.87], [-0.5, 0.87], [-1, 0], [-0.5, -0.87]]) + ' ' + paint + '/>';
+  }
+}
+function pmPanelSvg(o) {
+  return '<svg viewBox="0 0 100 100" aria-hidden="true">' + PM_POS[o.count + 1].map(function (q) { return pmShapeSvg(o, q[0], q[1]); }).join('') + '</svg>';
+}
+var PM_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'hexagon'], PM_FILLS = ['solid', 'tinted', 'outline'], PM_SIZES = ['small', 'medium', 'large'];
+function pmLabel(o) { return (o.count + 1) + ' ' + PM_SIZES[o.size] + ' ' + PM_FILLS[o.fill] + ' ' + PM_SHAPES[o.shape] + (o.count ? 's' : '') + ', colour ' + (o.color + 1); }
+
+function matrixView(ctx) {
+  var p = ctx.puzzle, rounds = p.rounds, cur = 0, wrongLeft = p.lives - 1, picked = {}, elim = {}, hintIx = {}, wrap;
+  function goal() { ctx.goal('Matrix <b>' + Math.min(cur + 1, rounds.length) + '</b> of <b>' + rounds.length + '</b>. Pick the panel that completes the grid. Wrong picks left <b>' + wrongLeft + '</b>.'); }
+  function render() {
+    var rd = rounds[cur]; wrap.textContent = '';
+    var grid = h('div', { class: 'pm-grid', role: 'img', 'aria-label': 'Three by three grid with the last panel missing' });
+    rd.panels.forEach(function (o) { grid.appendChild(h('div', { class: 'pm-cell', title: pmLabel(o), html: pmPanelSvg(o) })); });
+    grid.appendChild(h('div', { class: 'pm-cell pm-q', text: '?' }));
+    var opts = h('div', { class: 'pm-opts', style: '--k:' + (rd.options.length > 6 ? 4 : 3) });
+    rd.options.forEach(function (o, j) {
+      var gone = picked[cur + ':' + j] || elim[cur + ':' + j];
+      opts.appendChild(h('button', { class: 'pm-opt' + (gone ? ' gone' : ''), disabled: !!gone, 'aria-label': 'Option ' + 'ABCDEFGH'[j] + ': ' + pmLabel(o), onclick: function () { choose(j); } }, [h('span', { class: 'pm-tag', text: 'ABCDEFGH'[j] }), h('span', { class: 'pm-art', html: pmPanelSvg(o) })]));
+    });
+    wrap.appendChild(grid); wrap.appendChild(opts); goal();
+  }
+  function choose(j) {
+    if (ctx.isDone()) return;
+    var rd = rounds[cur], L = 'ABCDEFGH'[j];
+    if (picked[cur + ':' + j] || elim[cur + ':' + j]) return;
+    ctx.move('matrix ' + (cur + 1) + ' option ' + L);
+    if (j === rd.answer) {
+      cur++;
+      if (cur >= rounds.length) { goal(); ctx.solved(); return; }
+      ctx.msg('Correct. On to matrix ' + (cur + 1) + '.', 'good'); render(); return;
+    }
+    ctx.mistake(1); picked[cur + ':' + j] = true;
+    if (wrongLeft <= 0) { render(); ctx.failed('Out of wrong picks. The answer to matrix ' + (cur + 1) + ' was option ' + 'ABCDEFGH'[rd.answer] + '.'); return; }
+    wrongLeft--; render(); ctx.msg('Not option ' + L + '. ' + (wrongLeft ? wrongLeft + (wrongLeft === 1 ? ' wrong pick' : ' wrong picks') + ' left.' : 'The next wrong pick ends the attempt.'), 'bad');
+  }
+  return {
+    tools: { undo: false, notes: false, hint: true, check: false, restart: false },
+    mount: function () { wrap = h('div', { class: 'pm' }); ctx.board.appendChild(wrap); render(); },
+    hint: function () {
+      var rd = rounds[cur], hi = hintIx[cur] || 0, removed = 0;
+      for (var j = 0; j < rd.options.length && removed < 2; j++) if (j !== rd.answer && !picked[cur + ':' + j] && !elim[cur + ':' + j]) { elim[cur + ':' + j] = true; removed++; }
+      hintIx[cur] = hi + 1; ctx.hintUsed('matrix ' + (cur + 1)); render();
+      ctx.msg(rd.rules[hi % rd.rules.length] + (removed ? ' ' + removed + ' wrong ' + (removed === 1 ? 'option is' : 'options are') + ' removed.' : ''));
+    },
+    key: function (e) {
+      var k = e.key.toUpperCase(), j = 'ABCDEFGH'.indexOf(k); if (j < 0 && /^[1-8]$/.test(k)) j = +k - 1;
+      if (j >= 0 && j < rounds[cur].options.length) { choose(j); return true; }
+      return false;
+    },
+    state: function () { return { matrices_done: cur, wrong_picks_left: wrongLeft }; },
+    solve: function () { while (!ctx.isDone() && cur < rounds.length) choose(rounds[cur].answer); }
+  };
+}
+
+function safeView(ctx) {
+  var p = ctx.puzzle, N = p.N, code = p.code, entry = new Array(N).fill(-1), sel = 0, triesLeft = p.tries, locked = {}, struck = {}, slots = [];
+  function goal() { ctx.goal('Find the <b>' + N + '</b>-digit code. No digit is used twice. Tries left <b>' + triesLeft + '</b>.'); }
+  function paint() {
+    slots.forEach(function (s, i) {
+      s.textContent = entry[i] < 0 ? '' : String(entry[i]);
+      s.classList.toggle('sel', i === sel && !locked[i]); s.classList.toggle('given', !!locked[i]);
+    });
+    goal();
+  }
+  function advance() { for (var k = 1; k <= N; k++) { var i = (sel + k) % N; if (!locked[i] && entry[i] < 0) { sel = i; return; } } }
+  function type(d) {
+    if (locked[sel]) { advance(); if (locked[sel]) return; }
+    var other = entry.indexOf(d);
+    if (other >= 0 && other !== sel) { if (locked[other]) { ctx.msg(d + ' is already revealed in slot ' + (other + 1) + '.'); return; } entry[other] = -1; }
+    entry[sel] = d; ctx.msg(''); advance(); paint();
+  }
+  function tryCode() {
+    if (entry.indexOf(-1) >= 0) { ctx.msg('Fill every slot before you try the code.'); return; }
+    ctx.move('try ' + entry.join(''));
+    if (entry.join() === code.join()) { paint(); ctx.solved(); return; }
+    triesLeft--; ctx.mistake(1); paint();
+    if (triesLeft <= 0) { ctx.failed('Out of tries. The code was ' + code.join(' ') + '.'); return; }
+    ctx.msg('That code does not open the safe. ' + triesLeft + (triesLeft === 1 ? ' try' : ' tries') + ' left.', 'bad');
+  }
+  return {
+    tools: { undo: true, notes: false, hint: true, check: false, restart: false },
+    mount: function () {
+      var wrap = h('div', { class: 'safe' }), list = h('div', { class: 'sc-clues' });
+      p.clues.forEach(function (c, ci) {
+        list.appendChild(h('div', { class: 'sc-clue' }, [
+          h('div', { class: 'sc-digits' }, c.guess.map(function (d, di) {
+            var key = ci + ':' + di, b = h('button', { class: 'sc-d', text: String(d), 'aria-label': 'Digit ' + d + '. Select to cross it out in your notes', 'aria-pressed': 'false' });
+            b.addEventListener('click', function () { struck[key] = !struck[key]; b.classList.toggle('struck', struck[key]); b.setAttribute('aria-pressed', struck[key] ? 'true' : 'false'); });
+            return b;
+          })),
+          h('p', { class: 'sc-text', text: c.text })
+        ]));
+      });
+      var lock = h('div', { class: 'sc-lock', role: 'group', 'aria-label': 'Code entry' });
+      range(N).forEach(function (i) { var s = h('button', { class: 'sc-slot', 'aria-label': 'Slot ' + (i + 1), onclick: function () { if (!locked[i]) { sel = i; paint(); } } }); slots.push(s); lock.appendChild(s); });
+      wrap.appendChild(list); wrap.appendChild(lock); ctx.board.appendChild(wrap);
+      range(10).forEach(function (d) { ctx.pad.appendChild(h('button', { class: 'btn', text: String(d), onclick: function () { type(d); } })); });
+      ctx.pad.appendChild(h('button', { class: 'btn wide primary', id: 'sc-try', text: 'Try code', onclick: tryCode }));
+      paint();
+    },
+    undo: function () {
+      for (var k = 0; k < N; k++) { var i = (sel - 1 - k + 2 * N) % N; if (!locked[i] && entry[i] >= 0) { entry[i] = -1; sel = i; paint(); return true; } }
+      return false;
+    },
+    hint: function () {
+      var open = range(N).filter(function (i) { return !locked[i]; });
+      if (open.length <= 1) { ctx.msg('Only one digit is left to find. That one is yours.'); return; }
+      var i = open.filter(function (q) { return entry[q] !== code[q]; })[0]; if (i === undefined) i = open[0];
+      var other = entry.indexOf(code[i]); if (other >= 0 && other !== i) entry[other] = -1;
+      locked[i] = true; entry[i] = code[i]; if (sel === i) advance(); ctx.hintUsed('slot ' + (i + 1)); paint();
+      ctx.msg('Slot ' + (i + 1) + ' is ' + code[i] + '. It stays locked in.');
+    },
+    key: function (e) {
+      if (/^[0-9]$/.test(e.key)) { type(+e.key); return true; }
+      if (e.key === 'Backspace' || e.key === 'Delete') { this.undo(); return true; }
+      if (e.key === 'Enter') { tryCode(); return true; }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { var d = e.key === 'ArrowLeft' ? -1 : 1; for (var k = 1; k <= N; k++) { var i = (sel + d * k + N * 2) % N; if (!locked[i]) { sel = i; break; } } paint(); return true; }
+      return false;
+    },
+    state: function () { return { entry: entry, tries_left: triesLeft }; },
+    solve: function () { entry = code.slice(); tryCode(); }
+  };
+}
+var VIEWS = { sequence: sequenceView, numpath: numpathView, matrix: matrixView, safe: safeView, sudoku: sudokuView, kenken: kenkenView, crossmath: crossmathView, mathmaze: mazeView, sliding: slidingView, lights: lightsView, ballsort: ballsortView, nonogram: nonogramView, takuzu: takuzuView, mastermind: mastermindView };
 
 /* ================= play flow ================= */
 var tick = null;
@@ -1228,7 +1526,7 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'z' || e.key === 'Z') { $('#t-undo').click(); e.preventDefault(); return; }
   if (e.key === 'h' || e.key === 'H') { $('#t-hint').click(); e.preventDefault(); return; }
   if ((e.key === 'n' || e.key === 'N') && c.view.toggleNotes) { $('#t-notes').click(); e.preventDefault(); return; }
-  if (e.key === 'Enter' && tag === 'button' && c.type !== 'mastermind') return;
+  if (e.key === 'Enter' && tag === 'button' && ['mastermind', 'sequence', 'safe'].indexOf(c.type) < 0) return;
   if (c.view.key(e)) e.preventDefault();
 });
 $('#f-track').addEventListener('change', renderLog); $('#f-outcome').addEventListener('change', renderLog);

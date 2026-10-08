@@ -1,4 +1,4 @@
-/* Puzzle Triathlon engines: seeded generators and solvers for ten puzzle types (including Cross Math).
+/* Puzzle Triathlon engines: seeded generators and solvers for fourteen puzzle types.
    Runs in the page, in a Web Worker, and in Node (for tests). */
 (function (root) {
 'use strict';
@@ -1062,18 +1062,429 @@ function genCrossmath(level, rng) {
   };
 }
 
+/* ================= NUMBER SEQUENCE ================= */
+function sqRand(rng, lo, hi) { return lo + ri(rng, hi - lo + 1); }
+function sqStep(d) { return d > 0 ? 'add ' + d : 'subtract ' + (-d); }
+function sqNonZero(rng, lo, hi) { var v = 0; while (!v) v = sqRand(rng, lo, hi); return v; }
+var SQ_FAMS = {
+  arith: function (rng, big, small) {
+    var a = small ? sqRand(rng, 1, 15) : sqRand(rng, big ? -30 : -5, big ? 80 : 30), d = small ? sqRand(rng, 2, 6) : sqNonZero(rng, big ? -15 : -9, big ? 15 : 9);
+    return { f: function (i) { return a + i * d; }, desc: (d > 0 ? 'Add ' + d : 'Subtract ' + (-d)) + ' each time.' };
+  },
+  geom: function (rng, big) {
+    var a = sqRand(rng, 1, big ? 7 : 4), r = sqRand(rng, 2, big ? 4 : 3);
+    return { f: function (i) { return a * Math.pow(r, i); }, desc: 'Multiply by ' + r + ' each time.' };
+  },
+  alt: function (rng, big) {
+    var a = sqRand(rng, 1, 20), d1 = sqNonZero(rng, -9, big ? 15 : 9), d2 = sqNonZero(rng, -9, big ? 15 : 9);
+    while (d2 === d1) d2 = sqNonZero(rng, -9, 9);
+    return { f: function (i) { var k = Math.floor(i / 2); return a + k * (d1 + d2) + (i % 2 ? d1 : 0); }, desc: 'Alternately ' + sqStep(d1) + ' and ' + sqStep(d2) + '.' };
+  },
+  squares: function (rng, big) {
+    var k = sqRand(rng, 1, big ? 9 : 5), c = big ? sqRand(rng, -6, 6) : 0;
+    return { f: function (i) { return (i + k) * (i + k) + c; }, desc: 'Square numbers (' + (k * k) + ', ' + ((k + 1) * (k + 1)) + ', ' + ((k + 2) * (k + 2)) + ' and so on)' + (c ? (c > 0 ? ' plus ' + c : ' minus ' + (-c)) : '') + '.' };
+  },
+  quad: function (rng, big) {
+    var a = sqRand(rng, 1, 20), b = sqRand(rng, big ? -6 : 1, 6), c = sqNonZero(rng, big ? -4 : 1, big ? 5 : 3);
+    return { f: function (i) { return a + b * i + c * i * (i - 1) / 2; }, desc: 'The gaps between terms change by ' + c + ' each time.' };
+  },
+  affine: function (rng, big) {
+    var s = sqRand(rng, 1, 6), m = sqRand(rng, 2, big ? 3 : 2), c = sqNonZero(rng, -5, 5);
+    return { f: function (i) { var x = s; for (var k = 0; k < i; k++) x = m * x + c; return x; }, desc: 'Multiply by ' + m + ', then ' + (c > 0 ? 'add ' + c : 'subtract ' + (-c)) + '.' };
+  },
+  fib: function (rng, big) {
+    var a = sqRand(rng, 1, big ? 12 : 6), b = sqRand(rng, 1, big ? 12 : 6);
+    return { f: function (i) { var x = a, y = b; for (var k = 0; k < i; k++) { var t = x + y; x = y; y = t; } return x; }, desc: 'Each term is the sum of the two before it.' };
+  },
+  inter: function (rng, big) {
+    var a = sqRand(rng, 1, 20), d1 = sqNonZero(rng, -6, big ? 12 : 7), b = sqRand(rng, 1, 30), d2 = sqNonZero(rng, -6, big ? 12 : 7);
+    while (d2 === d1) d2 = sqNonZero(rng, -6, 7);
+    return { f: function (i) { var k = Math.floor(i / 2); return i % 2 ? b + k * d2 : a + k * d1; }, desc: 'Two sequences take turns: in one you ' + sqStep(d1) + ', in the other you ' + sqStep(d2) + '.' };
+  },
+  diffgeom: function (rng, big) {
+    var a = sqRand(rng, 1, 12), d = sqRand(rng, 1, big ? 5 : 3), r = sqRand(rng, 2, big ? 3 : 2);
+    return { f: function (i) { var x = a, g = d; for (var k = 0; k < i; k++) { x += g; g *= r; } return x; }, desc: 'The gaps between terms multiply by ' + r + ' each time.' };
+  },
+  cubes: function (rng, big) {
+    var k = sqRand(rng, 1, big ? 6 : 3), c = big ? sqRand(rng, -5, 5) : 0;
+    return { f: function (i) { return Math.pow(i + k, 3) + c; }, desc: 'Cube numbers (n × n × n)' + (c ? (c > 0 ? ' plus ' + c : ' minus ' + (-c)) : '') + '.' };
+  },
+  tri: function (rng) {
+    var a = sqRand(rng, 0, 4), b = sqRand(rng, 1, 4), c = sqRand(rng, 1, 5);
+    return { f: function (i) { var t = [a, b, c]; while (t.length <= i) t.push(t[t.length - 1] + t[t.length - 2] + t[t.length - 3]); return t[i]; }, desc: 'Each term is the sum of the three before it.' };
+  },
+  altops: function (rng, big) {
+    var s = sqRand(rng, 1, 9), m = sqRand(rng, 2, big ? 3 : 2), c = sqNonZero(rng, -7, 9);
+    return { f: function (i) { var x = s; for (var k = 0; k < i; k++) x = k % 2 ? x + c : x * m; return x; }, desc: 'Multiply by ' + m + ', then ' + (c > 0 ? 'add ' + c : 'subtract ' + (-c)) + ', and repeat.' };
+  },
+  posmult: function (rng) {
+    var s = sqRand(rng, 1, 3), m0 = sqRand(rng, 1, 2);
+    return { f: function (i) { var x = s; for (var k = 0; k < i; k++) x *= (m0 + k); return x; }, desc: 'Multiply by ' + m0 + ', then ' + (m0 + 1) + ', then ' + (m0 + 2) + ', and so on.' };
+  }
+};
+var SQ_LEVELS = [
+  { fams: ['arith'], shown: 5, ans: 1, small: true }, { fams: ['arith', 'geom'], shown: 5, ans: 1 },
+  { fams: ['alt', 'geom', 'squares'], shown: 6, ans: 1 }, { fams: ['quad', 'affine', 'squares'], shown: 6, ans: 1 },
+  { fams: ['fib', 'inter', 'quad'], shown: 6, ans: 1 }, { fams: ['affine', 'diffgeom', 'cubes', 'inter'], shown: 6, ans: 1 },
+  { fams: ['tri', 'altops', 'diffgeom', 'fib'], shown: 7, ans: 1 }, { fams: ['altops', 'posmult', 'tri', 'inter'], shown: 7, ans: 1, big: true },
+  { fams: ['quad', 'affine', 'fib', 'diffgeom', 'cubes', 'tri', 'altops', 'inter'], shown: 6, ans: 2 },
+  { fams: ['quad', 'affine', 'fib', 'diffgeom', 'cubes', 'tri', 'altops', 'inter', 'posmult'], shown: 6, ans: 2, big: true }
+];
+/* Every simple rule that fits the shown terms, with its predictions for the next k terms. */
+function sqFits(s, k) {
+  var out = [], m = s.length, i, j;
+  function push(name, pred) { if (pred) out.push({ name: name, pred: pred }); }
+  for (var ord = 1; ord <= 3; ord++) {
+    if (m < ord + 2) continue;
+    var rows = [s.slice()];
+    for (j = 0; j < ord; j++) { var p = rows[j], d = []; for (i = 1; i < p.length; i++) d.push(p[i] - p[i - 1]); rows.push(d); }
+    var last = rows[ord], ok = true; for (i = 1; i < last.length; i++) if (last[i] !== last[0]) ok = false;
+    if (!ok) continue;
+    var tails = rows.map(function (r) { return r[r.length - 1]; }), pred = [];
+    for (var t = 0; t < k; t++) { for (j = ord - 1; j >= 0; j--) tails[j] += tails[j + 1]; pred.push(tails[0]); }
+    push('poly' + ord, pred);
+  }
+  (function () {
+    for (i = 0; i < m; i++) if (!s[i]) return;
+    if (s[1] % s[0]) return; var r = s[1] / s[0];
+    for (i = 1; i < m; i++) if (s[i] !== s[i - 1] * r) return;
+    var pr = [], x = s[m - 1]; for (var t = 0; t < k; t++) { x *= r; pr.push(x); } push('geom', pr);
+  })();
+  (function () {
+    if (m < 5) return; var d = []; for (i = 1; i < m; i++) d.push(s[i] - s[i - 1]);
+    for (i = 2; i < d.length; i++) if (d[i] !== d[i - 2]) return;
+    var pr = [], x = s[m - 1]; for (t = 0; t < k; t++) { x += d[(m - 1 + t) % 2]; pr.push(x); } push('alt', pr);
+  })();
+  (function () {
+    if (m < 6) return;
+    var e = [], o = []; for (i = 0; i < m; i++) (i % 2 ? o : e).push(s[i]);
+    var de = e[1] - e[0], dO = o[1] - o[0];
+    for (i = 2; i < e.length; i++) if (e[i] - e[i - 1] !== de) return;
+    for (i = 2; i < o.length; i++) if (o[i] - o[i - 1] !== dO) return;
+    var pr = []; for (var t = 0; t < k; t++) { var idx = m + t, half = Math.floor(idx / 2); pr.push(idx % 2 ? o[0] + half * dO : e[0] + half * de); } push('inter', pr);
+  })();
+  (function () {
+    if (m < 5) return;
+    for (var p = -4; p <= 4; p++) for (var q = -3; q <= 3; q++) {
+      var r = s[2] - p * s[1] - q * s[0], ok2 = true;
+      for (i = 3; i < m; i++) if (s[i] !== p * s[i - 1] + q * s[i - 2] + r) { ok2 = false; break; }
+      if (!ok2) continue;
+      var a = s[m - 2], b = s[m - 1], pr = []; for (var t = 0; t < k; t++) { var c = p * b + q * a + r; pr.push(c); a = b; b = c; }
+      push('lin2', pr);
+    }
+  })();
+  (function () {
+    if (m < 5) return;
+    for (i = 3; i < m; i++) if (s[i] !== s[i - 1] + s[i - 2] + s[i - 3]) return;
+    var t3 = s.slice(m - 3), pr = []; for (var t = 0; t < k; t++) { var c = t3[0] + t3[1] + t3[2]; pr.push(c); t3 = [t3[1], t3[2], c]; } push('tri', pr);
+  })();
+  (function () {
+    if (m < 5) return; var d = []; for (i = 1; i < m; i++) d.push(s[i] - s[i - 1]);
+    for (i = 0; i < d.length; i++) if (!d[i]) return;
+    if (d[1] % d[0]) return; var r = d[1] / d[0]; if (Math.abs(r) < 2) return;
+    for (i = 1; i < d.length; i++) if (d[i] !== d[i - 1] * r) return;
+    var pr = [], x = s[m - 1], g = d[d.length - 1]; for (var t = 0; t < k; t++) { g *= r; x += g; pr.push(x); } push('diffgeom', pr);
+  })();
+  (function () {
+    if (m < 5) return;
+    for (var ph = 0; ph < 2; ph++) {
+      var mm = null, cc = null, ok3 = true;
+      for (i = 1; i < m && ok3; i++) {
+        var mul = (i - 1) % 2 === ph;
+        if (mul) { if (!s[i - 1] || s[i] % s[i - 1]) { ok3 = false; break; } var rr = s[i] / s[i - 1]; if (mm === null) mm = rr; else if (rr !== mm) ok3 = false; }
+        else { var dd = s[i] - s[i - 1]; if (cc === null) cc = dd; else if (dd !== cc) ok3 = false; }
+      }
+      if (!ok3 || mm === null || cc === null || Math.abs(mm) < 2) continue;
+      var pr = [], x = s[m - 1]; for (var t = 0; t < k; t++) { var st = m - 1 + t; x = (st % 2 === ph) ? x * mm : x + cc; pr.push(x); } push('altops', pr);
+    }
+  })();
+  (function () {
+    if (m < 5) return; var rs = [];
+    for (i = 1; i < m; i++) { if (!s[i - 1] || s[i] % s[i - 1]) return; rs.push(s[i] / s[i - 1]); }
+    for (i = 1; i < rs.length; i++) if (rs[i] !== rs[i - 1] + 1) return;
+    var pr = [], x = s[m - 1], r = rs[rs.length - 1]; for (var t = 0; t < k; t++) { r++; x *= r; pr.push(x); } push('posmult', pr);
+  })();
+  return out;
+}
+function genSequence(level, rng) {
+  var P = SQ_LEVELS[level - 1], total = P.shown + P.ans, out = null, fam, rule, terms;
+  for (var attempt = 0; attempt < 400 && !out; attempt++) {
+    fam = pick(rng, P.fams); rule = SQ_FAMS[fam](rng, !!P.big, !!P.small);
+    terms = []; for (var i = 0; i < total; i++) terms.push(rule.f(i));
+    if (terms.some(function (v) { return Math.abs(v) > 99999 || !isFinite(v); })) continue;
+    var uniq = {}; terms.forEach(function (v) { uniq[v] = 1; }); if (Object.keys(uniq).length < Math.min(total, 4)) continue;
+    var shown = terms.slice(0, P.shown), ans = terms.slice(P.shown), fits = sqFits(shown, P.ans);
+    if (!fits.length) continue;
+    var same = fits.every(function (f) { return f.pred.join(',') === ans.join(','); });
+    if (same) out = { shown: shown, ans: ans, desc: rule.desc, fam: fam, fits: fits.length };
+  }
+  if (!out) { out = { shown: [2, 4, 6, 8, 10], ans: [12].concat(P.ans > 1 ? [14] : []), desc: 'Add 2 each time.', fam: 'arith', fits: 1 }; }
+  return {
+    params: { family: out.fam, shown_terms: P.shown, answers: P.ans },
+    puzzle: { shown: out.shown, answers: out.ans, rule: out.desc },
+    difficulty: level, difficulty_label: 'rule family: ' + out.fam, optimal: null
+  };
+}
+
+/* ================= NUMBER PATH ================= */
+function npNbrs(R, C, i) {
+  var r = (i / C) | 0, c = i % C, o = [];
+  if (r > 0) o.push(i - C); if (r < R - 1) o.push(i + C); if (c > 0) o.push(i - 1); if (c < C - 1) o.push(i + 1);
+  return o;
+}
+function npDist(C, a, b) { return Math.abs(((a / C) | 0) - ((b / C) | 0)) + Math.abs(a % C - b % C); }
+/* Random Hamiltonian path by repeated backbite moves from a serpentine path. */
+function npPath(R, C, rng) {
+  var path = [], r, c;
+  for (r = 0; r < R; r++) for (c = 0; c < C; c++) path.push(r * C + (r % 2 ? C - 1 - c : c));
+  var N = R * C, idx = new Array(N);
+  function reindex() { for (var k = 0; k < N; k++) idx[path[k]] = k; }
+  reindex();
+  for (var it = 0; it < N * 40; it++) {
+    if (rng() < 0.5) { path.reverse(); reindex(); }
+    var end = path[N - 1], nb = npNbrs(R, C, end), x = pick(rng, nb), j = idx[x];
+    if (j === N - 2) continue;
+    var tail = path.slice(j + 1).reverse();
+    path = path.slice(0, j + 1).concat(tail); reindex();
+  }
+  return path;
+}
+/* Counts solutions up to `limit`; givens[cell] = number or 0. Number 1 must be given. */
+function npCount(R, C, givens, limit, cap) {
+  var N = R * C, pos = new Array(N + 2).fill(-1), val = givens.slice(), i, k;
+  for (i = 0; i < N; i++) if (givens[i]) pos[givens[i]] = i;
+  var nextG = new Array(N + 2).fill(0);
+  for (k = N; k >= 1; k--) nextG[k] = pos[k] >= 0 ? k : (k < N ? nextG[k + 1] : 0);
+  var count = 0, nodes = 0, over = false;
+  function rec(k, cell) {
+    if (k === N) { count++; return count >= limit; }
+    if (++nodes > cap) { over = true; return true; }
+    var nx = k + 1;
+    if (pos[nx] >= 0) return npDist(C, cell, pos[nx]) === 1 ? rec(nx, pos[nx]) : false;
+    var g = nx < N ? nextG[nx + 1] : 0, nb = npNbrs(R, C, cell);
+    for (var q = 0; q < nb.length; q++) {
+      var c2 = nb[q]; if (val[c2]) continue;
+      if (g) { var dd = npDist(C, c2, pos[g]); if (dd > g - nx || ((g - nx - dd) & 1)) continue; }
+      val[c2] = nx;
+      var stop = rec(nx, c2);
+      val[c2] = 0;
+      if (stop) return true;
+    }
+    return false;
+  }
+  if (pos[1] < 0) return { count: 0, over: true, nodes: 0 };
+  rec(1, pos[1]);
+  return { count: count, over: over, nodes: nodes };
+}
+var NP_LEVELS = [
+  { R: 4, C: 4, keep: 0.5 }, { R: 4, C: 4, keep: 0.36 }, { R: 5, C: 5, keep: 0.4 }, { R: 5, C: 5, keep: 0.3 }, { R: 6, C: 6, keep: 0.32 },
+  { R: 6, C: 6, keep: 0.25 }, { R: 6, C: 6, keep: 0.2 }, { R: 7, C: 7, keep: 0.26 }, { R: 7, C: 7, keep: 0.2 }, { R: 7, C: 7, keep: 0.16 }
+];
+function genNumpath(level, rng) {
+  var P = NP_LEVELS[level - 1], R = P.R, C = P.C, N = R * C, best = null;
+  for (var attempt = 0; attempt < 6; attempt++) {
+    var path = npPath(R, C, rng), sol = new Array(N);
+    path.forEach(function (cell, k) { sol[cell] = k + 1; });
+    var giv = sol.slice(), count = N, target = Math.max(2, Math.round(N * P.keep)), order = shuffle(rng, range(N)), nodes = 0;
+    for (var q = 0; q < N && count > target; q++) {
+      var cell = order[q]; if (sol[cell] === 1) continue;
+      var keep = giv[cell]; giv[cell] = 0;
+      var res = npCount(R, C, giv, 2, 60000);
+      if (res.count === 1 && !res.over) { count--; nodes = res.nodes; } else giv[cell] = keep;
+    }
+    var cand = { giv: giv, sol: sol, path: path, count: count, nodes: nodes };
+    if (!best || count < best.count) best = cand;
+    if (count <= target) break;
+  }
+  return {
+    params: { rows: R, cols: C, target_givens: Math.max(2, Math.round(N * P.keep)), givens: best.count },
+    puzzle: { R: R, C: C, givens: best.giv, solution: best.sol, path: best.path },
+    difficulty: best.nodes, difficulty_label: best.count + ' of ' + N + ' numbers given, solver search nodes: ' + best.nodes, optimal: null
+  };
+}
+
+/* ================= PATTERN MATRIX ================= */
+var PM_ATTRS = { shape: 5, count: 5, fill: 3, size: 3, color: 3 };
+var PM_NUMERIC = { count: 1, size: 1 };
+var PM_LEVELS = [
+  { attrs: [['count', ['prog']]], n: 1, opts: 6, rounds: 3, lives: 3 },
+  { attrs: [['count', ['prog', 'dist']], ['shape', ['dist']], ['fill', ['dist']]], n: 1, opts: 6, rounds: 3, lives: 3 },
+  { attrs: [['count', ['prog', 'const']], ['shape', ['dist', 'const']], ['fill', ['dist']]], n: 2, opts: 6, rounds: 3, lives: 3 },
+  { attrs: [['count', ['prog', 'dist']], ['shape', ['dist', 'const']], ['fill', ['dist', 'const']], ['size', ['prog', 'dist']]], n: 2, opts: 6, rounds: 4, lives: 3 },
+  { attrs: [['count', ['prog', 'dist']], ['shape', ['dist', 'const']], ['fill', ['dist', 'const']], ['size', ['prog', 'dist']]], n: 3, opts: 6, rounds: 4, lives: 3 },
+  { attrs: [['count', ['prog', 'dist']], ['shape', ['dist', 'const']], ['fill', ['dist', 'const']], ['size', ['prog', 'dist', 'const']]], n: 3, opts: 8, rounds: 4, lives: 2 },
+  { attrs: [['count', ['arith', 'prog', 'dist']], ['shape', ['dist', 'const']], ['fill', ['dist', 'const']], ['size', ['prog', 'dist']]], n: 3, opts: 8, rounds: 4, lives: 2 },
+  { attrs: [['count', ['prog', 'dist']], ['shape', ['dist', 'const']], ['fill', ['dist', 'const']], ['size', ['prog', 'dist', 'const']]], n: 4, opts: 8, rounds: 5, lives: 2 },
+  { attrs: [['count', ['arith', 'dist']], ['shape', ['dist']], ['fill', ['dist', 'const']], ['size', ['prog', 'dist']], ['color', ['dist', 'const']]], n: 4, opts: 8, rounds: 5, lives: 2 },
+  { attrs: [['count', ['arith', 'prog', 'dist']], ['shape', ['dist']], ['fill', ['dist']], ['size', ['prog', 'dist']], ['color', ['dist']]], n: 5, opts: 8, rounds: 5, lives: 2 }
+];
+/* Values for one attribute across the 3x3 grid (row-major), following a rule. */
+function pmRule(rng, attr, rule) {
+  var K = PM_ATTRS[attr], v = [], r;
+  if (rule === 'global') { var g = ri(rng, K); for (r = 0; r < 9; r++) v.push(g); return v; }
+  if (rule === 'const') { var vals = shuffle(rng, range(K)).slice(0, 3); for (r = 0; r < 3; r++) v.push(vals[r], vals[r], vals[r]); return v; }
+  if (rule === 'dist') { var d = shuffle(rng, range(K)).slice(0, 3), sh = rng() < 0.5 ? 1 : 2; for (r = 0; r < 3; r++) for (var c = 0; c < 3; c++) v.push(d[(c + r * sh) % 3]); return v; }
+  if (rule === 'prog') {
+    var step = K >= 5 && rng() < 0.3 ? 2 : 1; if (rng() < 0.4) step = -step;
+    for (r = 0; r < 3; r++) {
+      var lo = Math.max(0, -2 * step), hi = Math.min(K - 1, K - 1 - 2 * step), s0 = lo + ri(rng, hi - lo + 1);
+      if (attr === 'size') s0 = step > 0 ? 0 : 2;
+      v.push(s0, s0 + step, s0 + 2 * step);
+    }
+    return v;
+  }
+  if (rule === 'arith') { for (r = 0; r < 3; r++) { var a = 1 + ri(rng, 2), b = 1 + ri(rng, 4 - a); v.push(a - 1, b - 1, a + b - 1); } return v; }
+}
+/* Predictions of every rule hypothesis that fits the eight visible values of one attribute. */
+function pmPredict(attr, v) {
+  var preds = {}, row = function (r) { return [v[r * 3], v[r * 3 + 1], v[r * 3 + 2]]; }, a = row(0), b = row(1), c3 = [v[6], v[7]];
+  if (a[0] === a[1] && a[1] === a[2] && b[0] === b[1] && b[1] === b[2] && c3[0] === c3[1]) preds['const'] = c3[0];
+  var sa = a.slice().sort().join(), sb = b.slice().sort().join();
+  if (sa === sb && new Set(a).size === 3) { var miss = a.filter(function (x) { return c3.indexOf(x) < 0; }); if (miss.length === 1 && c3[0] !== c3[1]) preds['dist'] = miss[0]; }
+  if (PM_NUMERIC[attr]) {
+    var st = a[1] - a[0];
+    if (st && a[2] - a[1] === st && b[1] - b[0] === st && b[2] - b[1] === st && c3[1] - c3[0] === st) preds['prog'] = c3[1] + st;
+    if (attr === 'count' && a[2] === a[0] + a[1] + 1 && b[2] === b[0] + b[1] + 1) preds['arith'] = c3[0] + c3[1] + 1;
+  }
+  return preds;
+}
+var PM_DESC = {
+  'const': { shape: 'Each row uses one shape.', count: 'Each row keeps the same number of shapes.', fill: 'Each row keeps one fill style.', size: 'Each row keeps one size.', color: 'Each row keeps one colour.' },
+  'dist': { shape: 'Each row has the same three shapes in a different order.', count: 'Each row has the same three counts in a different order.', fill: 'Each row has the same three fills in a different order.', size: 'Each row has the same three sizes in a different order.', color: 'Each row has the same three colours in a different order.' },
+  'prog': { count: 'The number of shapes changes by the same step along each row.', size: 'The size changes by one step along each row.' },
+  'arith': { count: 'In each row, the third panel has as many shapes as the first two together.' }
+};
+function pmOne(rng, P) {
+  for (var guard = 0; guard < 200; guard++) {
+    var pool = shuffle(rng, P.attrs.slice()), active = pool.slice(0, P.n), rules = {}, vals = {}, ok = true, descs = [];
+    Object.keys(PM_ATTRS).forEach(function (attr) { rules[attr] = 'global'; });
+    active.forEach(function (a) { rules[a[0]] = pick(rng, a[1]); });
+    Object.keys(PM_ATTRS).forEach(function (attr) {
+      if (attr === 'color' && rules.color === 'global') { vals.color = new Array(9).fill(1); return; }
+      vals[attr] = pmRule(rng, attr, rules[attr]);
+      if (rules[attr] === 'global') return;
+      var preds = pmPredict(attr, vals[attr]), keys = Object.keys(preds), want = vals[attr][8];
+      if (!keys.length || keys.some(function (k) { return preds[k] !== want; })) ok = false;
+      descs.push(PM_DESC[rules[attr]][attr]);
+    });
+    if (!ok) continue;
+    var panels = range(9).map(function (i) { var o = {}; Object.keys(PM_ATTRS).forEach(function (attr) { o[attr] = vals[attr][i]; }); return o; });
+    var answer = panels[8], key = function (p) { return [p.shape, p.count, p.fill, p.size, p.color].join(''); };
+    var seen = {}; seen[key(answer)] = 1;
+    var actNames = active.map(function (a) { return a[0]; }), otherNames = Object.keys(PM_ATTRS).filter(function (x) { return actNames.indexOf(x) < 0 && x !== 'color'; });
+    var opts = [answer];
+    for (var t = 0; t < 400 && opts.length < P.opts; t++) {
+      var o2 = Object.assign({}, answer), flips = rng() < 0.75 ? 1 : 2;
+      for (var f = 0; f < flips; f++) {
+        var attr2 = rng() < 0.75 ? pick(rng, actNames) : pick(rng, otherNames.length ? otherNames : actNames), nv = ri(rng, PM_ATTRS[attr2]);
+        o2[attr2] = nv;
+      }
+      if (o2.count === 4 && o2.size === 2) continue;
+      if (seen[key(o2)]) continue; seen[key(o2)] = 1; opts.push(o2);
+    }
+    if (opts.length < P.opts) continue;
+    if (panels.some(function (p) { return p.count === 4 && p.size === 2; })) continue;
+    shuffle(rng, opts);
+    return { panels: panels.slice(0, 8), options: opts, answer: opts.indexOf(answer), rules: descs };
+  }
+  return null;
+}
+function genMatrix(level, rng) {
+  var P = PM_LEVELS[level - 1], rounds = [];
+  while (rounds.length < P.rounds) { var one = pmOne(rng, P); if (one) rounds.push(one); }
+  return {
+    params: { rounds: P.rounds, varying_attributes: P.n, options: P.opts, wrong_picks_allowed: P.lives - 1 },
+    puzzle: { rounds: rounds, lives: P.lives },
+    difficulty: P.n * 10 + P.opts, difficulty_label: P.rounds + ' matrices, ' + P.n + ' changing ' + (P.n === 1 ? 'feature' : 'features') + ', ' + P.opts + ' options', optimal: null
+  };
+}
+
+/* ================= SAFE CRACKER ================= */
+function scPerms(N) {
+  var out = [], cur = [], used = new Array(10).fill(false);
+  (function rec() {
+    if (cur.length === N) { out.push(cur.slice()); return; }
+    for (var d = 0; d < 10; d++) if (!used[d]) { used[d] = true; cur.push(d); rec(); cur.pop(); used[d] = false; }
+  })();
+  return out;
+}
+function scScore(code, guess) {
+  var e = 0, m = 0;
+  for (var i = 0; i < guess.length; i++) { if (code[i] === guess[i]) e++; else if (code.indexOf(guess[i]) >= 0) m++; }
+  return [e, m];
+}
+function scText(fb) {
+  var W = ['No', 'One', 'Two', 'Three', 'Four', 'Five'], e = fb[0], m = fb[1], parts = [];
+  if (!e && !m) return 'Nothing is correct';
+  if (e) parts.push(W[e] + (e === 1 ? ' number is' : ' numbers are') + ' correct and well placed');
+  if (m) parts.push((e ? W[m].toLowerCase() : W[m]) + (e ? (m === 1 ? ' is' : ' are') : (m === 1 ? ' number is' : ' numbers are')) + ' correct but wrongly placed');
+  return parts.join(', ');
+}
+var SC_PERMS = {};
+var SC_LEVELS = [
+  { N: 3, p0: 0.4, pickMode: 'max', min: 3, max: 5 }, { N: 3, p0: 0.25, pickMode: 'max', min: 4, max: 6 }, { N: 3, p0: 0.1, pickMode: 'min', min: 4, max: 7 },
+  { N: 4, p0: 0.3, pickMode: 'max', min: 4, max: 6 }, { N: 4, p0: 0.15, pickMode: 'mid', min: 5, max: 7 }, { N: 4, p0: 0, pickMode: 'min', min: 5, max: 8 },
+  { N: 4, p0: 0, pickMode: 'min', min: 6, max: 8 }, { N: 5, p0: 0.2, pickMode: 'max', min: 5, max: 7 }, { N: 5, p0: 0.05, pickMode: 'mid', min: 6, max: 8 },
+  { N: 5, p0: 0, pickMode: 'min', min: 6, max: 9 }
+];
+function scConsistent(cands, clues) {
+  return cands.filter(function (c) { for (var i = 0; i < clues.length; i++) { var s = scScore(c, clues[i].g); if (s[0] !== clues[i].fb[0] || s[1] !== clues[i].fb[1]) return false; } return true; });
+}
+function genSafe(level, rng) {
+  var P = SC_LEVELS[level - 1], all = SC_PERMS[P.N] || (SC_PERMS[P.N] = scPerms(P.N)), best = null;
+  for (var attempt = 0; attempt < 30; attempt++) {
+    var code = pick(rng, all), cands = all, clues = [];
+    for (var guard = 0; guard < 300 && cands.length > 1; guard++) {
+      var tries = P.pickMode === 'max' ? 6 : P.pickMode === 'mid' ? 3 : 6, opts = [];
+      for (var t = 0; t < tries; t++) {
+        var g = pick(rng, all); if (g.join() === code.join()) continue;
+        var fb = scScore(code, g); if (!fb[0] && !fb[1] && rng() >= P.p0) continue;
+        var left = cands.filter(function (c) { var s = scScore(c, g); return s[0] === fb[0] && s[1] === fb[1]; }).length;
+        if (left < cands.length) opts.push({ g: g, fb: fb, left: left });
+      }
+      if (!opts.length) continue;
+      opts.sort(function (a, b) { return a.left - b.left; });
+      var ch = P.pickMode === 'max' ? opts[0] : P.pickMode === 'min' ? opts[opts.length - 1] : opts[opts.length >> 1];
+      clues.push({ g: ch.g, fb: ch.fb });
+      cands = cands.filter(function (c) { var s = scScore(c, ch.g); return s[0] === ch.fb[0] && s[1] === ch.fb[1]; });
+    }
+    if (cands.length !== 1) continue;
+    var order = shuffle(rng, range(clues.length)), keepIdx = {};
+    clues.forEach(function (c, i) { keepIdx[i] = true; });
+    order.forEach(function (i) {
+      keepIdx[i] = false;
+      var rest = clues.filter(function (c, j) { return keepIdx[j]; });
+      if (scConsistent(all, rest).length !== 1) keepIdx[i] = true;
+    });
+    var fin = clues.filter(function (c, j) { return keepIdx[j]; });
+    var gap = fin.length < P.min ? P.min - fin.length : fin.length > P.max ? fin.length - P.max : 0;
+    var cand = { code: code, clues: shuffle(rng, fin), gap: gap };
+    if (!best || gap < best.gap) best = cand;
+    if (!gap) break;
+  }
+  return {
+    params: { digits: P.N, clues: best.clues.length, nothing_correct_clues: best.clues.filter(function (c) { return !c.fb[0] && !c.fb[1]; }).length },
+    puzzle: { N: P.N, code: best.code, clues: best.clues.map(function (c) { return { guess: c.g, exact: c.fb[0], misplaced: c.fb[1], text: scText(c.fb) }; }), tries: 3 },
+    difficulty: best.clues.length * 10 + P.N, difficulty_label: P.N + '-digit code, ' + best.clues.length + ' clues', optimal: null
+  };
+}
+
 /* ================= registry ================= */
 var TYPES = {
   sudoku: { track: 'math', name: 'Sudoku', gen: genSudoku },
   kenken: { track: 'math', name: 'KenKen', gen: genKenken },
   crossmath: { track: 'math', name: 'Cross Math', gen: genCrossmath },
   mathmaze: { track: 'math', name: 'Math Maze', gen: genMaze },
+  sequence: { track: 'math', name: 'Number Sequence', gen: genSequence },
   sliding: { track: 'analytical', name: 'Sliding Tiles', gen: genSliding },
   lights: { track: 'analytical', name: 'Lights Out', gen: genLights },
   ballsort: { track: 'analytical', name: 'Colour Sort', gen: genBallsort },
+  numpath: { track: 'analytical', name: 'Number Path', gen: genNumpath },
   nonogram: { track: 'logic', name: 'Nonogram', gen: genNonogram },
   takuzu: { track: 'logic', name: 'Binary Grid', gen: genTakuzu },
-  mastermind: { track: 'logic', name: 'Code Breaker', gen: genMastermind }
+  mastermind: { track: 'logic', name: 'Code Breaker', gen: genMastermind },
+  matrix: { track: 'logic', name: 'Pattern Matrix', gen: genMatrix },
+  safe: { track: 'logic', name: 'Safe Cracker', gen: genSafe }
 };
 function generate(type, level, seed) {
   var out = TYPES[type].gen(level, makeRng(seed));
@@ -1088,7 +1499,8 @@ var PT = {
   slide3Dist: slide3Dist, manhattan: manhattan, lightsSolve: lightsSolve,
   bsSolve: bsSolve, bsDone: bsDone, ngSolve: ngSolve, ngClues: ngClues,
   tkConflicts: tkConflicts, tkLogic: tkLogic, mmScore: mmScore,
-  cmEval: cmEval, cmCount: cmCount
+  cmEval: cmEval, cmCount: cmCount,
+  sqFits: sqFits, npCount: npCount, npDist: npDist, pmPredict: pmPredict, scScore: scScore, scText: scText, scConsistent: scConsistent, scPerms: scPerms
 };
 root.PT = PT;
 if (typeof module !== 'undefined' && module.exports) module.exports = PT;
